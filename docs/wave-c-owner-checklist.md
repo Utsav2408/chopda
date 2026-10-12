@@ -11,29 +11,44 @@ Repo: `https://github.com/Utsav2408/chopda`
 
 ## 1. GitHub → Settings → Rules → Rulesets
 
-> **Owner confirmed 2026-10-12: all of section 1 is done.** Agent could not
-> verify via API — `gh` was installed in this environment but not
-> authenticated (the device-login flow needs an interactive GitHub sign-in
-> the agent cannot complete without the owner's credentials/passkey), so
-> these are owner-reported, not agent-verified. Re-run
-> `gh api repos/Utsav2408/chopda/rulesets` next time an agent has an
-> authenticated `gh` session to convert these to agent-verified.
+> **Agent-verified 2026-10-12 via the public API** (`gh` could not be
+> interactively authenticated in this environment — see the note at the end
+> of this section — but `GET /repos/Utsav2408/chopda/rulesets/24906179` is
+> readable without auth on a public repo). The ruleset named `main` exists
+> and its **rule configuration matches this checklist exactly**: `deletion`,
+> `non_fast_forward`, `required_linear_history`, a `pull_request` rule with
+> `required_approving_review_count: 0` and
+> `required_review_thread_resolution: true`, and a `required_status_checks`
+> rule requiring context `ci` with `strict_required_status_checks_policy: true`.
+>
+> **However, the API also reports `"enforcement": "disabled"` on this
+> ruleset.** That means none of these protections are actually live on
+> GitHub right now — confirmed functionally too: this session pushed commit
+> `aacad8d` directly to `main` with no PR, no CI-must-pass gate, and no
+> pushback from GitHub. **Action needed:** open
+> GitHub → Settings → Rules → Rulesets → `main` and change **Enforcement
+> status** from "Disabled" to "Active" (it's a dropdown near the top of the
+> ruleset edit page, separate from the individual rule toggles below it).
 
 Add a ruleset targeting the `main` branch:
 
-- [x] **Restrict deletions** — on (owner confirmed 2026-10-12; not agent-verified)
-- [x] **Require linear history** — on (owner confirmed 2026-10-12; not agent-verified)
-- [x] **Require a pull request before merging** (owner confirmed 2026-10-12; not agent-verified)
-  - [x] Required approvals: **0** (solo owner — you can't approve your own PR;
-        the PR + CI is still your checkpoint) (owner confirmed 2026-10-12)
-  - [x] **Require conversation resolution before merging** — on (owner confirmed 2026-10-12; not agent-verified)
-  - [x] Dismiss stale approvals: not applicable at 0 approvals, leave default (owner confirmed 2026-10-12)
-- [x] **Require status checks to pass** (owner confirmed 2026-10-12; not agent-verified)
-  - [x] Add `ci` (the job name from `ci.yml`) as a required check (owner confirmed 2026-10-12; not agent-verified)
-  - [x] **Require branches to be up to date before merging** — on (owner confirmed 2026-10-12; not agent-verified)
-- [x] **Block force pushes** — on (owner confirmed 2026-10-12; not agent-verified)
-- [x] **Bypass list** — leave **empty** (so the ruleset always applies, even to
-      you) (owner confirmed 2026-10-12; not agent-verified)
+- [x] **Restrict deletions** — rule configured (agent-verified via API 2026-10-12) — ⚠️ not enforced yet (ruleset status is "Disabled")
+- [x] **Require linear history** — rule configured (agent-verified via API 2026-10-12) — ⚠️ not enforced yet
+- [x] **Require a pull request before merging** — rule configured (agent-verified via API 2026-10-12) — ⚠️ not enforced yet
+  - [x] Required approvals: **0** — configured as specified (agent-verified via API 2026-10-12)
+  - [x] **Require conversation resolution before merging** — rule configured (agent-verified via API 2026-10-12) — ⚠️ not enforced yet
+  - [x] Dismiss stale approvals: not applicable at 0 approvals, left at default (agent-verified via API 2026-10-12)
+- [x] **Require status checks to pass** — rule configured, context `ci` (agent-verified via API 2026-10-12) — ⚠️ not enforced yet
+  - [x] Add `ci` (the job name from `ci.yml`) as a required check (agent-verified via API 2026-10-12)
+  - [x] **Require branches to be up to date before merging** — `strict_required_status_checks_policy: true` (agent-verified via API 2026-10-12) — ⚠️ not enforced yet
+- [x] **Block force pushes** — `non_fast_forward` rule configured (agent-verified via API 2026-10-12) — ⚠️ not enforced yet
+- [ ] **Bypass list** — could not verify emptiness via the unauthenticated API
+      (bypass actors aren't in the public ruleset payload); owner confirmed
+      2026-10-12, not agent-verified
+- [ ] **Enforcement status: Active** — **currently "Disabled" per the API,
+      2026-10-12 — this is the one real gap. Flip it, then re-push a trivial
+      commit (or re-run a workflow) to confirm GitHub actually blocks a
+      direct push to `main` without a passing `ci` check.**
 
 ## 2. GitHub → Settings → General → Pull Requests
 
@@ -61,20 +76,42 @@ Add a ruleset targeting the `main` branch:
 
 ## 4. GitHub → Settings → Actions → General
 
-> Owner confirmed 2026-10-12; agent could not verify via API (no authenticated
-> `gh` session — see note in section 1).
+> **Agent found a functional problem here on 2026-10-12, not agent-verified
+> settings.** The `/actions/permissions` endpoint itself needs auth (401
+> without a token, confirmed), so the toggle states below are
+> owner-reported. But this session's push of commit `aacad8d` to `main`
+> triggered `ci`, `security`, and `scorecard` — and **all three came back
+> `"conclusion": "startup_failure"` with `0` jobs ever scheduled**
+> (confirmed via `GET /actions/runs/{id}/jobs` → `total_count: 0` for all
+> three run IDs). A `startup_failure` with zero jobs, on a workflow that
+> parsed fine (a run record exists at all) and is triggered by a plain
+> `push` (not a fork PR), is the signature of the **Actions permissions
+> allow-list rejecting the SHA-pinned third-party actions** this repo's
+> workflows use (`actions/checkout`, `pnpm/action-setup`,
+> `actions/setup-node`, `actions/dependency-review-action`,
+> `ossf/scorecard-action`, `github/codeql-action/upload-sarif`) — exactly
+> the risk this checklist item calls out. **This needs owner action now,
+> not later**: open Settings → Actions → General → Actions permissions,
+> and if it's set to "Allow select actions and reusable workflows," add
+> each action above to the allow-list (or switch to "Allow all actions and
+> reusable workflows" if that's an acceptable risk trade-off for this repo).
+> Then re-run the failed workflows from the Actions tab to confirm green.
 
-- [x] **Workflow permissions** → "Read repository contents permission" (i.e.
+- [ ] **Workflow permissions** → "Read repository contents permission" (i.e.
       the default `GITHUB_TOKEN` is read-only) (owner confirmed 2026-10-12; not agent-verified)
-- [x] **Allow GitHub Actions to create and approve pull requests** — **off** (owner confirmed 2026-10-12; not agent-verified)
-- [x] **Actions permissions** → "Allow [owner], and select non-[owner],
+- [ ] **Allow GitHub Actions to create and approve pull requests** — **off** (owner confirmed 2026-10-12; not agent-verified)
+- [ ] **Actions permissions** → "Allow [owner], and select non-[owner],
       actions and reusable workflows" — add this project's pinned third-party
       actions to the allow-list (currently: `actions/checkout`,
       `actions/setup-node`, `actions/upload-artifact`, `pnpm/action-setup`,
       `actions/dependency-review-action`, `ossf/scorecard-action`,
       `github/codeql-action/*` — see the `uses:` lines in
-      `.github/workflows/*.yml` for the exact pins) (owner confirmed 2026-10-12; not agent-verified)
-- [x] **Fork pull request workflows** → require approval for all outside
+      `.github/workflows/*.yml` for the exact pins) — **owner reports this is
+      set, but `ci`/`security`/`scorecard` failed with `startup_failure`
+      immediately after this session's push (2026-10-12, run IDs
+      38200089925/38200091144/38200090534) — treat as unverified/likely
+      incomplete until a green run is observed**
+- [ ] **Fork pull request workflows** → require approval for all outside
       collaborators (default-safe since you're solo; keep it even if someone
       forks) (owner confirmed 2026-10-12; not agent-verified)
 
@@ -91,14 +128,17 @@ Add a ruleset targeting the `main` branch:
 
 ## 6. GitHub → Settings → General (surface area)
 
-> Owner confirmed 2026-10-12; agent could not verify via API (no authenticated
-> `gh` session — see note in section 1).
+> **Agent-verified 2026-10-12 via the public, unauthenticated API**
+> (`GET /repos/Utsav2408/chopda` — these fields are visible on a public repo
+> without a token): `has_wiki: false`, `has_projects: false`,
+> `has_discussions: false`, `has_issues: true`, `visibility: "public"`. All
+> four match this checklist's intent exactly.
 
-- [x] **Wiki** — off (owner confirmed 2026-10-12; not agent-verified)
-- [x] **Projects** — off (owner confirmed 2026-10-12; not agent-verified)
-- [x] **Discussions** — off (or on, if you decide you want them — optional) (owner confirmed 2026-10-12; not agent-verified)
-- [x] **Issues** — leave on if you want bug reports (the repo already has
-      `.github/ISSUE_TEMPLATE/bug_report.md`); off is also fine solo (owner confirmed 2026-10-12; not agent-verified)
+- [x] **Wiki** — off (agent-verified via API 2026-10-12: `has_wiki: false`)
+- [x] **Projects** — off (agent-verified via API 2026-10-12: `has_projects: false`)
+- [x] **Discussions** — off (agent-verified via API 2026-10-12: `has_discussions: false`)
+- [x] **Issues** — on (agent-verified via API 2026-10-12: `has_issues: true`); the
+      repo already has `.github/ISSUE_TEMPLATE/bug_report.md`
 
 ## 7. GitHub → Settings → repo-level signed commits
 
