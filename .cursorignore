@@ -1,0 +1,24 @@
+# Keep secret-like paths out of Cursor's Agent/Tab/Inline Edit/@-mention context.
+# This is a convenience, not a security boundary — see AGENTS.md and
+# docs/invoice-tracker-github-repo-checklist.md §10.4. Terminal commands run by
+# Agent are NOT blocked by this file; keep terminal auto-run restricted instead.
+
+.env
+.env.*
+!.env.example
+
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*.json
+*secrets*.json
+
+# local storage adapter folder, wherever it's configured
+/storage/
+/.data/
+
+# personal agent overrides (also gitignored)
+.claude/settings.local.json
+CLAUDE.local.md
+.cursor/mcp.json

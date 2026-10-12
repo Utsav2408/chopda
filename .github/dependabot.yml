@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      npm-dependencies:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 10
+    # Security updates are handled separately by GitHub (immediate, not
+    # grouped/weekly) once "Dependabot security updates" is enabled in Settings.
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"

@@ -1,0 +1,11 @@
+.next/
+node_modules/
+coverage/
+playwright-report/
+test-results/
+pnpm-lock.yaml
+db/migrations/*.sql
+
+# Planning docs are long-form prose written/reviewed by the owner outside this
+# tooling; leave their line-wrapping untouched so diffs stay about content only.
+docs/

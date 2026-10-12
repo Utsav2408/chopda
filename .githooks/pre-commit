@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+# Pre-commit hygiene hook (B5). This is a convenience, NOT the enforcement layer —
+# CI (.github/workflows/ci.yml, security.yml) is the real gate and runs the same
+# checks against the actual push/PR.
+set -e
+
+echo "pre-commit: checking staged files for secrets (gitleaks)…"
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact -v
+else
+  echo "pre-commit: gitleaks not installed locally — skipping secret scan." >&2
+  echo "pre-commit: install it (brew install gitleaks) so this check actually runs." >&2
+fi
+
+echo "pre-commit: formatting and linting staged files…"
+pnpm exec prettier --write $(git diff --cached --name-only --diff-filter=ACM -- '*.ts' '*.tsx' '*.js' '*.mjs' '*.json' '*.md' 2>/dev/null) 2>/dev/null || true
+pnpm run lint
+
+echo "pre-commit: done."

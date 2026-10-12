@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./storage/**)",
+      "Read(./.data/**)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/*credentials*.json)",
+      "Bash(curl *)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(rm *)",
+      "Bash(drizzle-kit migrate *)",
+      "Bash(pnpm db:migrate*)"
+    ],
+    "allow": [
+      "Bash(pnpm run lint)",
+      "Bash(pnpm run lint:fix)",
+      "Bash(pnpm run typecheck)",
+      "Bash(pnpm run format)",
+      "Bash(pnpm run test)",
+      "Bash(pnpm run test *)",
+      "Bash(pnpm run build)",
+      "Bash(pnpm run storage:smoke)",
+      "Bash(pnpm run check:public-env)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/pre-tool-use.mjs"
+          }
+        ]
+      }
+    ]
+  }
+}
