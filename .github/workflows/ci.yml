@@ -15,7 +15,12 @@ concurrency:
 
 jobs:
   build:
-    name: lint, typecheck, unit tests, build
+    # Job display name MUST stay exactly "ci" — the `main` branch ruleset's
+    # required_status_checks rule requires a check literally named "ci"
+    # (GitHub Actions check-runs are named after the job's `name:`, not the
+    # workflow's `name:`). Renaming this breaks the merge gate silently
+    # (PRs stay "blocked" even with every check green) — verified 2026-10-12.
+    name: ci
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
