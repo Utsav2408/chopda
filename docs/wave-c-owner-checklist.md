@@ -35,7 +35,19 @@ Repo: `https://github.com/Utsav2408/chopda`
   - [x] **Require conversation resolution before merging** — rule configured and **active** (agent-verified 2026-10-12)
   - [x] Dismiss stale approvals: not applicable at 0 approvals, left at default (agent-verified 2026-10-12)
 - [x] **Require status checks to pass** — rule configured, context `ci`, **active**; confirmed functionally (push rejected citing `"Required status check \"ci\" is expected"`) (agent-verified 2026-10-12)
-  - [x] Add `ci` (the job name from `ci.yml`) as a required check (agent-verified 2026-10-12)
+  - [x] Add `ci` (the job name from `ci.yml`) as a required check — **found and
+        fixed a third bug here**: the ruleset's required context is the
+        literal string `ci`, but GitHub Actions check-runs are named after a
+        job's `name:` field, and `ci.yml`'s job was named `"lint, typecheck,
+        unit tests, build"` — never matching. This meant **every PR was
+        silently stuck at `mergeStateStatus: BLOCKED`** even with 100% green
+        checks (confirmed via `gh pr view --json mergeStateStatus` on PR #2
+        before the fix: all 9 checks `pass`, yet `BLOCKED`). Fixed by renaming
+        the job's `name:` to `ci` in `.github/workflows/ci.yml` (commit
+        `256dbee`, no pinning/security changes). Re-checked the same PR
+        afterwards: the check named `ci` appeared and passed, and
+        `mergeStateStatus` moved `BLOCKED` → `UNSTABLE` → `CLEAN` as the
+        remaining non-required checks finished (agent-fixed-and-verified 2026-10-12)
   - [x] **Require branches to be up to date before merging** — `strict_required_status_checks_policy: true` (agent-verified 2026-10-12)
 - [x] **Block force pushes** — `non_fast_forward` rule configured and **active** (agent-verified 2026-10-12)
 - [x] **Bypass list** — **empty**, confirmed via authenticated API: `"bypass_actors": []`, `"current_user_can_bypass": "never"` (agent-verified 2026-10-12; previously owner-confirmed only)
@@ -121,10 +133,13 @@ Repo: `https://github.com/Utsav2408/chopda`
 > **Verified the fix works**: re-ran `scorecard.yml` via `workflow_dispatch`
 > (run `38201109877`) — it went from an instant `startup_failure` to actually
 > executing and completing `success` in 25s. CodeQL default-setup (§3 above)
-> also ran clean under the same corrected allow-list. The `ci`/`security`
-> workflows were exercised via this pass's own docs PR (see `STATUS.md` Wave
-> B4 row for the resulting run IDs/conclusions) to confirm the fix holds for
-> `pull_request`-triggered runs too, not just `workflow_dispatch`.
+> also ran clean under the same corrected allow-list. This pass's own docs PR
+> (`https://github.com/Utsav2408/chopda/pull/2`) then exercised `ci` and
+> `security` for real on a `pull_request` event — all jobs across both
+> workflows completed `success` (run IDs `38202156752` for `ci`,
+> `38202156746` for `security`'s three jobs, `38202154083` + the default-setup
+> run for CodeQL). This is the first time any of this repo's custom workflows
+> have actually run a job, let alone gone green.
 
 - [x] **Workflow permissions** → "Read repository contents permission" —
       confirmed: `GET /actions/permissions/workflow` →
@@ -179,11 +194,18 @@ Repo: `https://github.com/Utsav2408/chopda`
 - [x] Skip for now (checklist explicitly defers this — no action needed)
 
 > **GitHub side (§1–7) is now fully settled as of 2026-10-12** — every item
-> above is agent-verified via an authenticated API/functional test, with the
-> two real bugs found in the prior pass (ruleset enforcement disabled, and
-> this pass's new find: the Actions allow-list `@ref` bug) both confirmed
-> fixed. The one unchecked item (§4 fork PR approval) is a non-blocking,
-> UI-only setting that doesn't affect this solo-maintainer repo today.
+> above is agent-verified via an authenticated API/functional test. Three
+> real bugs were found and fixed across the two passes: (1) ruleset
+> enforcement was `disabled` (owner fixed before this pass, agent confirmed
+> `active` + functional push-rejection test), (2) the Actions allow-list
+> patterns were missing `@ref` wildcards so every SHA-pinned action was
+> silently rejected (agent-fixed via API), and (3) the required `ci` status
+> check could never be satisfied because the job's display name didn't match
+> the literal string `ci`, leaving every PR permanently `BLOCKED` regardless
+> of check results (agent-fixed via a one-line `ci.yml` rename). PR #2 is the
+> live proof: all checks green and `mergeStateStatus: CLEAN`. The one
+> unchecked item (§4 fork PR approval) is a non-blocking, UI-only setting
+> that doesn't affect this solo-maintainer repo today.
 >
 > **Sections 8–11 (Vercel) are still the owner's to-do.** Not reviewed or
 > checked by the agent in this pass — no Vercel CLI/API check was requested
