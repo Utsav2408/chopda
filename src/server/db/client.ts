@@ -1,6 +1,10 @@
 /**
  * Pooled Drizzle client for the app (DATABASE_URL). Migrations use
- * DATABASE_URL_DIRECT via scripts/migrate.ts — never this pool.
+ * DATABASE_URL_DIRECT / DATABASE_URL_UNPOOLED via scripts/migrate.ts —
+ * never this pool.
+ *
+ * On Vercel Fluid Compute, node-postgres + attachDatabasePool is the
+ * Neon-recommended pairing (see neon-postgres skill).
  */
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
@@ -12,10 +16,18 @@ export type AppTx = Parameters<Parameters<AppDb["transaction"]>[0]>[0];
 
 let pool: Pool | undefined;
 let db: AppDb | undefined;
+let vercelPoolAttached = false;
 
 export function getPool(): Pool {
   if (!pool) {
-    pool = new Pool({ connectionString: getEnv().DATABASE_URL });
+    // Keep max modest: Fluid reuses isolates; each isolate holds its own pool.
+    pool = new Pool({ connectionString: getEnv().DATABASE_URL, max: 10 });
+    if (process.env.VERCEL && !vercelPoolAttached) {
+      vercelPoolAttached = true;
+      void import("@vercel/functions").then(({ attachDatabasePool }) => {
+        if (pool) attachDatabasePool(pool);
+      });
+    }
   }
   return pool;
 }

@@ -31,6 +31,16 @@ describe("loadEnv (B0-10)", () => {
     expect(() => loadEnv({})).toThrow(/DATABASE_URL/);
   });
 
+  it("accepts Neon DATABASE_URL_UNPOOLED as DATABASE_URL_DIRECT", () => {
+    const env = loadEnv(
+      baseLocalEnv({
+        DATABASE_URL_DIRECT: undefined,
+        DATABASE_URL_UNPOOLED: "postgres://user:pass@ep-xxx.neon.tech/neondb",
+      }),
+    );
+    expect(env.DATABASE_URL_DIRECT).toContain("neon.tech");
+  });
+
   it("fails when STORAGE_PROVIDER=local without FILE_STORAGE_DIR", () => {
     expect(() =>
       loadEnv(
