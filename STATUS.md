@@ -263,6 +263,23 @@ P↔B map: P0≈B0, P1≈B1+B2+B3, P2≈B4, P3≈B5+B6, P4≈B7, P5≈B8+B9, UI�
 
 Tests: `tests/db/constraints.test.ts`, `tests/db/rls.test.ts` (CI `db-tests`).
 
+### Phase B2 — Security primitives
+
+| ID    | Status | Evidence                                                         |
+| ----- | ------ | ---------------------------------------------------------------- |
+| B2-01 | done   | `src/server/security/password.ts` + unit tests                   |
+| B2-02 | done   | `src/server/security/session.ts` + unit tests                    |
+| B2-03 | done   | `src/server/security/rate-limit.ts` decision tests               |
+| B2-04 | done   | `src/server/security/crypto.ts` AES-256-GCM round-trip           |
+| B2-05 | done   | `scripts/rotate-encryption-key.ts` (`pnpm crypto:rotate`)        |
+| B2-06 | done   | `src/server/db/with-user.ts`                                     |
+| B2-07 | done   | `src/server/audit/write.ts` + redaction tests                    |
+| B2-08 | done   | `src/server/authz` requireRole / requireStepRole / canSeeInvoice |
+| B2-09 | done   | CSP/headers + CSRF helpers + `pnpm check:security-headers`       |
+| B2-10 | done   | `src/middleware.ts` cookie gate                                  |
+| B2-11 | done   | `requireCronSecret`                                              |
+| B2-12 | done   | `tests/security/role-matrix.ts` sample row                       |
+
 ### Later phases
 
-B2–B9 and U1–U5 land in follow-up stacked PRs.
+B3–B9 and U1–U5 land in follow-up stacked PRs.
