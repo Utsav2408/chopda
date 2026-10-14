@@ -7,7 +7,7 @@ import {
   type Expectation,
 } from "./role-matrix.js";
 
-describe("role matrix (B2-12)", () => {
+describe("role matrix (B2-12 / B3-14)", () => {
   it("covers every expected operation id", () => {
     const ids = ROLE_MATRIX.map((r) => r.id);
     expect(ids.sort()).toEqual([...ROLE_MATRIX_EXPECTED_IDS].sort());

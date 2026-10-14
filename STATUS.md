@@ -280,6 +280,25 @@ Tests: `tests/db/constraints.test.ts`, `tests/db/rls.test.ts` (CI `db-tests`).
 | B2-11 | done   | `requireCronSecret`                                              |
 | B2-12 | done   | `tests/security/role-matrix.ts` sample row                       |
 
+### Phase B3 — Identity
+
+| ID    | Status | Evidence                                                                                                                                                               |
+| ----- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B3-01 | done   | `src/server/auth/service.ts` `login`. Tests: `auth.login decision paths (B3-01)` — good / bad / unknown-user (dummy hash) / inactive / rate-limited.                   |
+| B3-02 | done   | `logout`, `logoutAll`, `resolveSession` (touches `last_seen_at` via session primitive).                                                                                |
+| B3-03 | done   | `src/app/api/auth/login/route.ts`, `logout/route.ts` + `auth/cookies.ts`. Tests: `session cookie helper (B3-03)`, `POST /api/auth/login (B3-03)` (cookie flags + 401). |
+| B3-04 | done   | `scripts/bootstrap-admin.ts` + `pnpm db:bootstrap`. Second run exits non-zero when an Admin already exists.                                                            |
+| B3-05 | done   | `users.create` (Builder/Viewer only, temp password, `must_change_password`). Tests: `users.create role checks (B3-05)`.                                                |
+| B3-06 | done   | `users.list` / `users.get` with phone/email only for Admin or self (`projectUser`).                                                                                    |
+| B3-07 | done   | `users.deactivate` / `reactivate`; Admin deactivate refused; sessions revoked on deactivate.                                                                           |
+| B3-08 | done   | `users.resetPassword` — temp password, force change, revoke sessions.                                                                                                  |
+| B3-09 | done   | `users.changeOwnPassword` — verify old; revoke other sessions (keep current when `currentSessionId` set).                                                              |
+| B3-10 | done   | `users.transferAdmin` single tx (demote then promote); `one_admin` count checked; audit row.                                                                           |
+| B3-11 | done   | `users.updateOwnProfile` (name/email/phone/photo/prefs); cannot change role.                                                                                           |
+| B3-12 | done   | `listOwnSessions` / `revokeOwnSession` in auth service.                                                                                                                |
+| B3-13 | done   | API routes under `src/app/api/users/**`, `src/app/api/me/**` + `src/server/actions/users.ts` (cookie-resolved ctx, Zod).                                               |
+| B3-14 | done   | `tests/security/role-matrix.ts` appends all B3 ops; harness expects 0 unexpected allows.                                                                               |
+
 ### Later phases
 
-B3–B9 and U1–U5 land in follow-up stacked PRs.
+B4–B9 and U1–U5 land in follow-up stacked PRs.
