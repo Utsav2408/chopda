@@ -239,6 +239,30 @@ P↔B map: P0≈B0, P1≈B1+B2+B3, P2≈B4, P3≈B5+B6, P4≈B7, P5≈B8+B9, UI�
 | B0-15 | done    | `/api/health` + `/health` re-export; e2e hits `/api/health`.                                                              |
 | B0-16 | done    | This section + P* rows; private notes outside repo (`DECISIONS.md`).                                                      |
 
+### Phase B1 — Database foundation
+
+| ID    | Status | Evidence                                                                                     |
+| ----- | ------ | -------------------------------------------------------------------------------------------- |
+| B1-01 | done   | `0000_b1_schema.sql`: citext/pgcrypto, `user_role`, `users`, `one_admin`.                    |
+| B1-02 | done   | `sessions` + `login_attempts`.                                                               |
+| B1-03 | done   | `audit_log`.                                                                                 |
+| B1-04 | done   | `0001_b1_triggers_roles_rls.sql` creates `app_user`, grants, revokes audit UPDATE/DELETE.    |
+| B1-05 | done   | `flow_templates` / `flow_versions` / `flow_steps`.                                           |
+| B1-06 | done   | Trigger blocking edits to published steps.                                                   |
+| B1-07 | done   | `invoices` + indexes.                                                                        |
+| B1-08 | done   | `invoice_steps` + forward-only / in-order triggers.                                          |
+| B1-09 | done   | `documents` (no bytea).                                                                      |
+| B1-10 | done   | `company_profile` singleton + one active default bank.                                       |
+| B1-11 | done   | `reminder_state` + `user_preferences`.                                                       |
+| B1-12 | done   | RLS on `users`.                                                                              |
+| B1-13 | done   | RLS on flow tables.                                                                          |
+| B1-14 | done   | RLS on invoices / invoice_steps / documents.                                                 |
+| B1-15 | done   | RLS on company + bank + audit.                                                               |
+| B1-16 | done   | `src/server/db/schema.ts`, `drizzle.config.ts`, `pnpm db:check-drift`, CI `migration-drift`. |
+| B1-17 | done   | `pnpm db:seed` — synthetic users + Standard/Courier raw fixtures.                            |
+
+Tests: `tests/db/constraints.test.ts`, `tests/db/rls.test.ts` (CI `db-tests`).
+
 ### Later phases
 
-B1–B9 and U1–U5 land in follow-up stacked PRs.
+B2–B9 and U1–U5 land in follow-up stacked PRs.
