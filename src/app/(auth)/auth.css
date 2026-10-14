@@ -1,0 +1,59 @@
+/* Auth screens (U2-01 / U2-02) */
+
+.auth-layout {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6) var(--space-4);
+}
+
+.auth-layout__panel {
+  width: min(100%, 24rem);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: rgb(255 255 255 / 0.92);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(8px);
+}
+
+.auth-layout__brand {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  color: var(--brand-800);
+  margin-bottom: var(--space-1);
+}
+
+.auth-layout__lede {
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-5);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.auth-form__note {
+  margin-top: var(--space-4);
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.auth-form__error {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  font-size: 0.875rem;
+}
+
+.auth-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}

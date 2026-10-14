@@ -1,0 +1,62 @@
+/* Admin settings (U2-05) */
+
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.settings-page__intro h2 {
+  margin-bottom: var(--space-1);
+}
+
+.settings-page__intro p {
+  color: var(--color-text-muted);
+  margin: 0;
+  max-width: 40rem;
+}
+
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.settings-panel__title {
+  margin-bottom: 0;
+}
+
+.settings-panel__lede {
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.settings-dl {
+  display: grid;
+  grid-template-columns: minmax(8rem, 12rem) 1fr;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.settings-dl dt {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.settings-dl dd {
+  margin: 0;
+}
+
+.settings-matrix-cell--allow {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.settings-matrix-cell--deny {
+  color: var(--color-text-muted);
+}

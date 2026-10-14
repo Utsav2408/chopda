@@ -1,0 +1,232 @@
+/* Invoice / dashboard / reminders surfaces (U4) */
+
+.inv-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.inv-page-header h2 {
+  margin: 0;
+}
+
+.inv-page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.inv-stack {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.inv-grid-2 {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 960px) {
+  .inv-grid-2 {
+    grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.8fr);
+    align-items: start;
+  }
+}
+
+.inv-panel {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-4);
+}
+
+.inv-panel h3 {
+  margin: 0 0 var(--space-3);
+  font-size: 0.95rem;
+}
+
+.inv-meta-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+}
+
+.inv-meta-list li {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: var(--space-2);
+}
+
+.inv-meta-list dt,
+.inv-meta-list .inv-meta-label {
+  color: var(--color-text-muted);
+}
+
+.inv-done-step {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.inv-done-step:first-child {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.inv-doc-list,
+.inv-history-list,
+.inv-reminder-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.inv-doc-list a,
+.inv-history-list a,
+.inv-reminder-list a {
+  word-break: break-word;
+}
+
+.inv-history-item {
+  font-size: 0.875rem;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.inv-history-item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.inv-history-meta {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.dash-counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.dash-count {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-4);
+}
+
+.dash-count__value {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  color: var(--brand-800);
+  line-height: 1.1;
+}
+
+.dash-count__label {
+  margin-top: var(--space-1);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dash-health[data-status="ok"] {
+  border-color: var(--color-success);
+}
+
+.dash-health[data-status="degraded"] {
+  border-color: var(--color-warning);
+  background: var(--color-warning-bg);
+}
+
+.dash-health[data-status="error"] {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.reminders-bell {
+  position: relative;
+}
+
+.reminders-bell__btn {
+  appearance: none;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  min-height: 2.25rem;
+  min-width: 2.25rem;
+  padding: 0 0.65rem;
+  cursor: pointer;
+  font-weight: 550;
+}
+
+.reminders-bell__btn:hover {
+  background: var(--brand-50);
+  color: var(--brand-800);
+}
+
+.reminders-bell__badge {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: var(--color-text-inverse);
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reminders-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 50;
+  width: min(22rem, calc(100vw - 2rem));
+  max-height: 24rem;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-3);
+}
+
+.reminders-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.reminders-panel__header h2 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.app-shell__topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}

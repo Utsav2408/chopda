@@ -1,0 +1,245 @@
+/* My profile + company profile (U5-01 / U5-02) */
+
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: 44rem;
+  width: 100%;
+}
+
+.profile-page__intro h2 {
+  margin-bottom: var(--space-1);
+}
+
+.profile-page__intro p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.profile-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-2);
+}
+
+.profile-tabs__link {
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-weight: 550;
+  font-size: 0.9rem;
+}
+
+.profile-tabs__link:hover {
+  background: var(--brand-50);
+  color: var(--brand-800);
+}
+
+.profile-tabs__link[aria-current="page"] {
+  background: var(--brand-50);
+  color: var(--brand-900);
+}
+
+.profile-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.profile-section__title {
+  margin: 0;
+}
+
+.profile-section__lede {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.profile-form__row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+@media (min-width: 560px) {
+  .profile-form__row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.profile-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.profile-alert {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+}
+
+.profile-alert--error {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.profile-alert--ok {
+  background: var(--brand-50);
+  color: var(--brand-900);
+  border: 1px solid var(--brand-200);
+}
+
+.profile-dl {
+  display: grid;
+  grid-template-columns: minmax(7rem, 10rem) 1fr;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.profile-dl dt {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.profile-dl dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.profile-device-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.profile-device {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.profile-device__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.profile-device__ua {
+  font-weight: 550;
+  word-break: break-word;
+}
+
+.profile-device__sub {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.profile-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: 0.9rem;
+}
+
+.profile-check input {
+  margin-top: 0.2rem;
+}
+
+.profile-coming-later {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.profile-bank-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.profile-bank {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.profile-bank__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.profile-bank__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.profile-bank__fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.15rem 1rem;
+  font-size: 0.875rem;
+}
+
+@media (min-width: 560px) {
+  .profile-bank__fields {
+    grid-template-columns: auto 1fr;
+  }
+}
+
+.profile-bank__fields dt {
+  color: var(--color-text-muted);
+  font-weight: 550;
+}
+
+.profile-bank__fields dd {
+  margin: 0;
+  word-break: break-all;
+}
+
+.profile-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85rem;
+}
