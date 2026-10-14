@@ -23,31 +23,36 @@ notes, kept outside this repository (see the note at the end of this file).
   "Krypton" — see `.nvmrc` and `engines` in `package.json`). Bump both together
   when the next LTS line is ready for adoption; don't track `latest`.
 
-## File storage (build-time default)
+## File storage
 
-- During the build (Phases 0–4), files go to a local folder behind the storage
-  adapter interface (`src/server/storage/`), selected by `STORAGE_PROVIDER=local`
-  and configured by `FILE_STORAGE_DIR`. This folder is for test/dev data only and
-  is gitignored.
-- **Before any deployment that accepts uploads**, the team must switch to a
-  durable provider (Google Drive or Cloudflare R2 — owner to choose, tracked as
-  the open `P5-15` gate) and only then proceed. The local adapter refuses to
-  start when `VERCEL_ENV=production` (see `assertNotProductionLocal()` in
-  `src/server/storage/index.ts`).
-- Which account (Google/Cloudflare) ends up holding the production files is an
-  operational detail that stays in the owner's local private notes, not here.
+- **Build-time (Phases 0–B8):** local folder behind the storage adapter
+  (`STORAGE_PROVIDER=local`, `FILE_STORAGE_DIR`). Test/dev data only; gitignored.
+  The local adapter refuses to start in production (see
+  `assertNotProductionLocal()` in `src/server/storage/index.ts`).
+- **Go-live store (resolved 14 Oct 2026):** **Cloudflare R2**, Standard class
+  only. Free-tier rules, credentials model, and agent runbook live in
+  [`docs/invoice-tracker-cloudflare-r2-agent-guide.md`](docs/invoice-tracker-cloudflare-r2-agent-guide.md).
+  Production switches via `STORAGE_PROVIDER=r2` at gate `B9-08h` / `P5-15`.
+  Which Cloudflare account holds the bucket is an operational detail kept in
+  the owner's local private notes, not here.
 
-## Roles, sign-in, deletes (already resolved in the phasewise plan)
+## Roles, sign-in, deletes, flows, waiting (resolved)
 
 - Roles: `admin` (exactly one, enforced by a partial unique index), `builder`,
   `viewer`.
+- **Builder may publish flows** (resolved 14 Oct 2026): Admin and Builder may
+  create, edit, publish, and archive flows. Viewer is read-only on flows.
 - Sign-in: username + password (argon2id), own session table, long random
   tokens stored hashed. No third-party auth service.
 - Delete: soft delete with a 30-day undo window, then a scheduled purge of the
   row and its stored file. The audit log is never purged. Only the Admin may
   delete; no accountant sign-off is needed.
+- **Waiting threshold default: 3 days** (resolved 14 Oct 2026): configurable;
+  Waiting = current step open longer than this threshold.
+- **Release 1 step field types** (resolved 14 Oct 2026): `file`, `text`,
+  `confirm`, and optional `date` / `number` (per B4-01).
 - Backups: none for now (per the database doc); gated before real data goes in
-  — see `P5-09` in `STATUS.md`.
+  — see `P5-09` / `B9-07` in `STATUS.md`.
 - Bank IFSC validation: format check only (4 letters, `0`, 6 letters or digits).
   No online IFSC lookup API.
 
@@ -81,9 +86,7 @@ notes, kept outside this repository (see the note at the end of this file).
 
 ## Still open (blocks later phases, not Phases 0–4)
 
-- [ ] Go-live file store: Google Drive or Cloudflare R2, and whose account holds
-      it (`P5-15`). Does not block Phases 0–4.
-- [ ] Confirm database/hosting region (`P0-03`).
+- [ ] Confirm database/hosting region (`P0-03` / `B0-12`).
 - [ ] Phase 6 gates (`P6-01`): model provider, monthly cap, privacy acceptance,
       first capabilities — not asked until Release 1 is live.
 

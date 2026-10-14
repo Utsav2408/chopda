@@ -1,0 +1,15 @@
+# Local test Postgres for B0-14 DB harness. Synthetic credentials only.
+services:
+  postgres:
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: chopda
+      POSTGRES_PASSWORD: chopda
+      POSTGRES_DB: chopda_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chopda -d chopda_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

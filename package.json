@@ -25,6 +25,8 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "storage:smoke": "tsx scripts/storage-smoke.ts",
     "check:public-env": "tsx scripts/check-public-env-names.ts",
+    "check:no-ai": "tsx scripts/check-no-ai-before-phase6.ts",
+    "check:server-import-ban": "node scripts/check-server-import-ban.mjs",
     "prepare": "node scripts/setup-git-hooks.mjs"
   },
   "dependencies": {

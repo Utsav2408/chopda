@@ -169,7 +169,7 @@ not doing real work yet:
 | P5-12 | Privacy pass for personal data                            | todo   | —   | —                                                                                                                              |
 | P5-13 | Go-live runbook                                           | todo   | —   | Full runbook lives in **local private notes**, outside this repo (see `DECISIONS.md`).                                         |
 | P5-14 | Clean production data                                     | todo   | —   | —                                                                                                                              |
-| P5-15 | **Gate:** reliable file storage (Drive or R2)             | todo   | —   | Owner decision still open — see `DECISIONS.md`.                                                                                |
+| P5-15 | **Gate:** reliable file storage (Cloudflare R2)           | todo   | —   | Provider locked to R2 (`DECISIONS.md`); implement via B9-08a–h.                                                                |
 
 ## Phase 6 — Agentic layer (Release 2) — not started, gated
 
@@ -207,5 +207,38 @@ rows below are `todo` and must stay that way until the gates are ticked in
 | Email reminders / automated emails      | todo   |
 | Search over documents (pgvector)        | todo   |
 | Virus scanning                          | todo   |
-| Storage provider move (e.g. Drive → R2) | todo   |
+| Storage provider move (e.g. R2 → other) | todo   |
 | Hosting/database move                   | todo   |
+
+---
+
+## Backend-first (B*/U*) tracking
+
+Source: [`docs/invoice-tracker-backend-first-task-breakdown.md`](docs/invoice-tracker-backend-first-task-breakdown.md)
+plus R2 guide [`docs/invoice-tracker-cloudflare-r2-agent-guide.md`](docs/invoice-tracker-cloudflare-r2-agent-guide.md).
+P↔B map: P0≈B0, P1≈B1+B2+B3, P2≈B4, P3≈B5+B6, P4≈B7, P5≈B8+B9, UI≈U*.
+
+### Phase B0 — Repo, guardrails, CI
+
+| ID    | Status  | Evidence                                                                                                                  |
+| ----- | ------- | ------------------------------------------------------------------------------------------------------------------------- |
+| B0-01 | done    | `DECISIONS.md` D1–D5 + 14 Oct 2026: Builder publish, waiting=3d, field types, R2 go-live. Neon region still open (B0-12). |
+| B0-02 | done    | Next.js App Router, TS strict, pnpm, `.nvmrc`, folder layout (Wave B1).                                                   |
+| B0-03 | done    | `@/server` ban is error; `pnpm check:server-import-ban`.                                                                  |
+| B0-04 | done    | `ci.yml` green on PR #2 (run `38202156752`).                                                                              |
+| B0-05 | done    | `pnpm audit --prod --audit-level=high` fails CI on high/critical.                                                         |
+| B0-06 | done    | Ruleset + PR template (Wave C).                                                                                           |
+| B0-07 | done    | `.gitignore`, `.env.example`, `check:public-env`, `SECURITY.md`.                                                          |
+| B0-08 | done    | `pnpm check:no-ai` + CI step; unit tests for planted violations.                                                          |
+| B0-09 | done    | `src/server/kernel/*`; logger redacts password (`tests/unit/kernel/`).                                                    |
+| B0-10 | done    | `src/server/env.ts` Zod loader; local/R2 conditional; unit tests.                                                         |
+| B0-11 | done    | `AGENTS.md`, `CLAUDE.md`, `.claude/settings.json`, `.cursorignore`, `CONTRIBUTING.md`.                                    |
+| B0-12 | blocked | Owner: Neon project + region (does not block local/CI Postgres for B1).                                                   |
+| B0-13 | done    | Local storage + `pnpm storage:smoke`.                                                                                     |
+| B0-14 | done    | `docker-compose.yml`, `tests/db/*` placeholder, CI `db-tests` job with postgres:16.                                       |
+| B0-15 | done    | `/api/health` + `/health` re-export; e2e hits `/api/health`.                                                              |
+| B0-16 | done    | This section + P* rows; private notes outside repo (`DECISIONS.md`).                                                      |
+
+### Later phases
+
+B1–B9 and U1–U5 land in follow-up stacked PRs.
