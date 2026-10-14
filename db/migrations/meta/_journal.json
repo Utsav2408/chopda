@@ -29,6 +29,13 @@
       "when": 1791955000000,
       "tag": "0003_b7_audit_select",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791959042790,
+      "tag": "0004_b9_storage_ops_daily",
+      "breakpoints": true
     }
   ]
 }

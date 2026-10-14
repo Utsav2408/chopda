@@ -1,20 +1,21 @@
 /**
- * health.check — DB, storage, used bytes, backup status (B7-11).
- * Class A/B ops alerts land with B9-08g.
+ * health.check — DB, storage, used bytes, backup status, ops alerts (B7-11 / B9-08g).
  */
 import { isNull, sql } from "drizzle-orm";
 import { getDb } from "../db/client.js";
 import { documents } from "../db/schema.js";
 import { STORAGE_HEALTH_CACHE_TTL_MS } from "../invoices/constants.js";
-import { getStorageAdapter, type StorageAdapter } from "../storage/index.js";
-
-/** Soft alert when live document bytes exceed 8 GB (of 10 GB free-tier headroom). */
-export const STORAGE_BYTES_ALERT_THRESHOLD = 8 * 1024 * 1024 * 1024;
-
-export function storageBytesAlert(usedBytes: string | number | bigint): boolean {
-  const n = typeof usedBytes === "bigint" ? usedBytes : BigInt(String(usedBytes));
-  return n > BigInt(STORAGE_BYTES_ALERT_THRESHOLD);
-}
+import {
+  getMonthStorageOps,
+  getStorageAdapter,
+  storageBytesAlert,
+  STORAGE_BYTES_ALERT_THRESHOLD,
+  STORAGE_CLASS_A_MONTHLY_LIMIT,
+  STORAGE_CLASS_B_MONTHLY_LIMIT,
+  type MonthOpsTotals,
+  type StorageAdapter,
+  type StorageOpsAlertLevel,
+} from "../storage/index.js";
 
 export type HealthStatus = "ok" | "degraded" | "error";
 
@@ -29,6 +30,15 @@ export type HealthCheckResult = {
   storageUsedBytes: string;
   /** True when live document bytes exceed 8 GB (of 10 GB free tier). */
   storageUsedAlert: boolean;
+  storageOps: {
+    classAMonth: number;
+    classBMonth: number;
+    classALimit: number;
+    classBLimit: number;
+    classAAlert: StorageOpsAlertLevel;
+    classBAlert: StorageOpsAlertLevel;
+    storageBytesThreshold: number;
+  };
   backupStatus: "none";
 };
 
@@ -64,13 +74,24 @@ async function probeStorage(
   }
 }
 
+function emptyOps(): MonthOpsTotals {
+  return {
+    classA: 0,
+    classB: 0,
+    classAAlert: "none",
+    classBAlert: "none",
+  };
+}
+
 /**
- * Full health check (B7-11). Storage healthCheck cached ≥ 5 minutes.
+ * Full health check (B7-11 / B9-08g). Storage healthCheck cached ≥ 5 minutes.
  */
 export async function check(opts?: {
   storage?: StorageAdapter;
   storageCacheTtlMs?: number;
   now?: Date;
+  /** Inject month ops for unit tests. */
+  monthOps?: MonthOpsTotals;
 }): Promise<HealthCheckResult> {
   const nowDate = opts?.now ?? new Date();
   const now = nowDate.getTime();
@@ -79,6 +100,7 @@ export async function check(opts?: {
 
   let database: HealthCheckResult["database"] = { ok: false };
   let storageUsedBytes = "0";
+  let monthOps = opts?.monthOps ?? emptyOps();
 
   try {
     const db = getDb();
@@ -92,6 +114,10 @@ export async function check(opts?: {
       .from(documents)
       .where(isNull(documents.deletedAt));
     storageUsedBytes = sumRow?.total ?? "0";
+
+    if (!opts?.monthOps) {
+      monthOps = await getMonthStorageOps(nowDate);
+    }
   } catch (err) {
     database = {
       ok: false,
@@ -105,7 +131,9 @@ export async function check(opts?: {
   let status: HealthStatus = "ok";
   if (!database.ok && !storageProbe.ok) status = "error";
   else if (!database.ok || !storageProbe.ok) status = "degraded";
-  else if (usedAlert) status = "degraded";
+  else if (usedAlert || monthOps.classAAlert !== "none" || monthOps.classBAlert !== "none") {
+    status = "degraded";
+  }
 
   return {
     status,
@@ -120,6 +148,15 @@ export async function check(opts?: {
     storageProvider: process.env.STORAGE_PROVIDER ?? "local",
     storageUsedBytes,
     storageUsedAlert: usedAlert,
+    storageOps: {
+      classAMonth: monthOps.classA,
+      classBMonth: monthOps.classB,
+      classALimit: STORAGE_CLASS_A_MONTHLY_LIMIT,
+      classBLimit: STORAGE_CLASS_B_MONTHLY_LIMIT,
+      classAAlert: monthOps.classAAlert,
+      classBAlert: monthOps.classBAlert,
+      storageBytesThreshold: STORAGE_BYTES_ALERT_THRESHOLD,
+    },
     backupStatus: "none",
   };
 }

@@ -27,6 +27,7 @@
     "db:bootstrap": "tsx scripts/bootstrap-admin.ts",
     "db:check-drift": "tsx scripts/check-migration-drift.ts",
     "storage:smoke": "tsx scripts/storage-smoke.ts",
+    "perf:smoke": "tsx scripts/perf-smoke.ts",
     "check:public-env": "tsx scripts/check-public-env-names.ts",
     "check:no-ai": "tsx scripts/check-no-ai-before-phase6.ts",
     "check:server-import-ban": "node scripts/check-server-import-ban.mjs",
@@ -35,6 +36,7 @@
     "prepare": "node scripts/setup-git-hooks.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1150.0",
     "argon2": "^0.45.1",
     "drizzle-orm": "^0.45.4",
     "next": "^16.4.0",

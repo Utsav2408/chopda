@@ -86,8 +86,15 @@ describe("local storage adapter (B6-01 / B6-03)", () => {
     expect(await storage.exists("via-factory")).toBe(true);
   });
 
-  it("getStorageAdapter refuses R2 until B9", () => {
+  it("getStorageAdapter returns R2 adapter when STORAGE_PROVIDER=r2", () => {
     process.env.STORAGE_PROVIDER = "r2";
-    expect(() => getStorageAdapter()).toThrow(/not available until B9/);
+    process.env.R2_ACCOUNT_ID = "test-account";
+    process.env.R2_BUCKET = "test-bucket";
+    process.env.R2_ACCESS_KEY_ID = "test-key";
+    process.env.R2_SECRET_ACCESS_KEY = "test-secret";
+    const storage = getStorageAdapter();
+    expect(storage).toBeDefined();
+    expect(typeof storage.put).toBe("function");
+    expect(typeof storage.healthCheck).toBe("function");
   });
 });

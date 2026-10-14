@@ -1,20 +1,19 @@
 import { createReadStream } from "node:fs";
 import { access, constants, mkdir, open, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, normalize, resolve, sep } from "node:path";
+import { incrementStorageOps } from "./ops-counter.js";
 import { DOCUMENTS_KEY_PREFIX, toObjectKey } from "./object-key.js";
+import { createR2StorageAdapter } from "./r2.js";
 import type { StorageAdapter, StoragePutOptions } from "./types.js";
 
 /**
- * File storage adapter (B6-01 … B6-04).
+ * File storage adapter (B6-01 / B9-08d).
  *
  * Keys are document IDs. Adapters may prefix with `documents/` on the wire.
  * Contract (R2 free-tier rules apply even to local):
  * - put / getStream / delete / exists / healthCheck
  * - healthCheck must NOT list
  * - no multipart uploads
- *
- * R2 adapter lands in B9 — `getStorageAdapter()` refuses `STORAGE_PROVIDER=r2`
- * until then.
  *
  * This module does not `import "server-only"` so Node scripts
  * (scripts/storage-smoke.ts) can use it outside Next.js. App code should go
@@ -67,20 +66,27 @@ function safeJoin(root: string, objectKey: string): string {
 }
 
 export type LocalStorageAdapterOptions = {
-  /** Reserved for B9 ops metering; ignored until then. */
+  /** When false, skip ops counter (parity with R2; default true). */
   trackOps?: boolean;
 };
 
-export function createLocalStorageAdapter(_opts: LocalStorageAdapterOptions = {}): StorageAdapter {
+export function createLocalStorageAdapter(opts: LocalStorageAdapterOptions = {}): StorageAdapter {
   assertNotProductionLocal();
   const root = resolveStorageDir();
+  const trackOps = opts.trackOps !== false;
+
+  async function track(delta: { classA?: number; classB?: number }): Promise<void> {
+    if (!trackOps) return;
+    await incrementStorageOps(delta);
+  }
 
   return {
-    async put(key, data, _options?: StoragePutOptions) {
+    async put(key, data, _options) {
       const objectKey = toObjectKey(key);
       const target = safeJoin(root, objectKey);
       await mkdir(dirname(target), { recursive: true });
       await writeFile(target, data);
+      await track({ classA: 1 });
     },
     async getStream(key) {
       const objectKey = toObjectKey(key);
@@ -90,6 +96,7 @@ export function createLocalStorageAdapter(_opts: LocalStorageAdapterOptions = {}
       } catch {
         throw new Error(`Object not found: ${key}`);
       }
+      await track({ classB: 1 });
       return createReadStream(target);
     },
     async delete(key) {
@@ -103,8 +110,10 @@ export function createLocalStorageAdapter(_opts: LocalStorageAdapterOptions = {}
       try {
         const handle = await open(target, "r");
         await handle.close();
+        await track({ classB: 1 });
         return true;
       } catch {
+        await track({ classB: 1 });
         return false;
       }
     },
@@ -114,12 +123,13 @@ export function createLocalStorageAdapter(_opts: LocalStorageAdapterOptions = {}
       if (!info.isDirectory()) {
         throw new Error(`FILE_STORAGE_DIR is not a directory: ${root}`);
       }
+      await track({ classB: 1 });
     },
   };
 }
 
 /**
- * Process-wide adapter factory. Local only until B9-08d (R2).
+ * Process-wide adapter factory. Local or R2 (B9-08d).
  */
 export function getStorageAdapter(): StorageAdapter {
   const provider = process.env.STORAGE_PROVIDER ?? "local";
@@ -127,10 +137,7 @@ export function getStorageAdapter(): StorageAdapter {
     return createLocalStorageAdapter();
   }
   if (provider === "r2") {
-    throw new Error(
-      "STORAGE_PROVIDER=r2 is not available until B9 (reliable R2 adapter). " +
-        "Use STORAGE_PROVIDER=local for development.",
-    );
+    return createR2StorageAdapter();
   }
   throw new Error(`Unknown STORAGE_PROVIDER: ${provider}`);
 }
@@ -146,3 +153,21 @@ export {
   type ValidatedUpload,
   type ValidateUploadInput,
 } from "./validate-upload.js";
+
+export {
+  incrementStorageOps,
+  getMonthStorageOps,
+  storageBytesAlert,
+  STORAGE_CLASS_A_MONTHLY_LIMIT,
+  STORAGE_CLASS_B_MONTHLY_LIMIT,
+  STORAGE_BYTES_ALERT_THRESHOLD,
+  type MonthOpsTotals,
+  type StorageOpsAlertLevel,
+} from "./ops-counter.js";
+
+export {
+  createR2StorageAdapter,
+  createR2S3Client,
+  type R2Env,
+  type R2AdapterOptions,
+} from "./r2.js";

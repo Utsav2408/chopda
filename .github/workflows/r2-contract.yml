@@ -1,0 +1,69 @@
+name: r2-contract
+
+# B9-08e: run the StorageAdapter contract suite against a real R2 test bucket.
+# Manual only — never on every PR (shares the free-tier op budget).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r2-contract
+  cancel-in-progress: false
+
+jobs:
+  r2-contract:
+    name: r2-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Skip when R2 secrets missing
+        id: gate
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: |
+          if [ -z "$R2_ACCOUNT_ID" ] || [ -z "$R2_BUCKET" ] || [ -z "$R2_ACCESS_KEY_ID" ] || [ -z "$R2_SECRET_ACCESS_KEY" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "R2 secrets not configured — skipping live contract (B9-08e)."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run R2 contract suite
+        if: steps.gate.outputs.skip != 'true'
+        env:
+          STORAGE_PROVIDER: r2
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          # Dummy DB env so imports that touch loadEnv in other modules do not fail.
+          DATABASE_URL: postgres://unused:unused@127.0.0.1:1/unused
+          DATABASE_URL_DIRECT: postgres://unused:unused@127.0.0.1:1/unused
+          SESSION_SECRET: r2-contract-session-secret-placeholder
+          ENCRYPTION_KEY: r2-contract-encryption-key-placeholder
+          CRON_SECRET: r2-contract-cron-secret-placeholder
+        run: |
+          pnpm exec vitest run tests/storage/r2-live.contract.test.ts
+          echo "R2 contract finished — keep Class A+B under ~50 ops per run."
