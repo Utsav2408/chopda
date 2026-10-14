@@ -9,9 +9,15 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
 async function main() {
-  const connectionString = process.env.DATABASE_URL_DIRECT ?? process.env.DATABASE_URL;
+  // Prefer direct/unpooled (Neon: DATABASE_URL_UNPOOLED) — never migrate via pooler.
+  const connectionString =
+    process.env.DATABASE_URL_DIRECT ??
+    process.env.DATABASE_URL_UNPOOLED ??
+    process.env.DATABASE_URL;
   if (!connectionString) {
-    throw new Error("Set DATABASE_URL_DIRECT (or DATABASE_URL) before running migrations.");
+    throw new Error(
+      "Set DATABASE_URL_DIRECT or DATABASE_URL_UNPOOLED (or DATABASE_URL) before running migrations.",
+    );
   }
 
   const pool = new Pool({ connectionString });

@@ -84,11 +84,22 @@ function formatEnvErrors(error: z.ZodError): string {
 export type EnvSource = Record<string, string | undefined>;
 
 /**
+ * Neon `neon env pull` writes `DATABASE_URL` (pooled) and
+ * `DATABASE_URL_UNPOOLED` (direct). This app historically uses
+ * `DATABASE_URL_DIRECT` for migrations — accept either name.
+ */
+function resolveDatabaseUrls(source: EnvSource): EnvSource {
+  const direct = source.DATABASE_URL_DIRECT || source.DATABASE_URL_UNPOOLED;
+  if (!direct) return source;
+  return { ...source, DATABASE_URL_DIRECT: direct };
+}
+
+/**
  * Parse and validate env from a source object (defaults to process.env).
  * Throws with a clear multi-line message on failure. Does not cache.
  */
 export function loadEnv(source: EnvSource = process.env): AppEnv {
-  const parsed = envSchema.safeParse(source);
+  const parsed = envSchema.safeParse(resolveDatabaseUrls(source));
   if (!parsed.success) {
     throw new Error(
       `Invalid environment configuration — refusing to boot:\n${formatEnvErrors(parsed.error)}`,
