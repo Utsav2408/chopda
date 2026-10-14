@@ -129,10 +129,24 @@ describe.skipIf(!connectionString)("flows service (B4)", () => {
 
     const publishedStepId = detail.steps[0]!.id;
     // Direct DB update on published steps must fail (trigger).
+    // Drizzle wraps the Postgres error; walk the cause chain for the message.
     const db = getDb();
-    await expect(
-      db.update(flowSteps).set({ name: "hacked" }).where(eq(flowSteps.id, publishedStepId)),
-    ).rejects.toThrow(/published/i);
+    let thrown: unknown;
+    try {
+      await db
+        .update(flowSteps)
+        .set({ name: "hacked" })
+        .where(eq(flowSteps.id, publishedStepId));
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown).toBeTruthy();
+    const messages: string[] = [];
+    for (let cur: unknown = thrown; cur; cur = (cur as { cause?: unknown }).cause) {
+      if (cur instanceof Error) messages.push(cur.message);
+      else messages.push(String(cur));
+    }
+    expect(messages.join("\n")).toMatch(/published/i);
   });
 
   it("publish twice gives v1 and v2; v1 byte-identical (B4-05)", async () => {
@@ -172,9 +186,10 @@ describe.skipIf(!connectionString)("flows service (B4)", () => {
       .from(flowSteps)
       .where(eq(flowSteps.versionId, publishedV1!.id));
     expect(v1DbSteps[0]!.name).toBe("Only step");
-    expect(JSON.stringify(v1DbSteps[0]!.fields)).toBe(
-      JSON.stringify([{ key: "ok", label: "OK", type: "confirm", required: true }]),
-    );
+    // Compare as values (JSON key order from jsonb is not guaranteed).
+    expect(v1DbSteps[0]!.fields).toEqual([
+      { key: "ok", label: "OK", type: "confirm", required: true },
+    ]);
   });
 
   it("archive blocks new invoices (B4-06)", async () => {
