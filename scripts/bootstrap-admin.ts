@@ -46,7 +46,8 @@ async function main() {
       [username, passwordHash, displayName],
     );
 
-    console.log(`[bootstrap-admin] Created Admin user "${username}".`);
+    // Do not echo env-derived username (CodeQL js/clear-text-logging).
+    console.log("[bootstrap-admin] Created Admin user.");
   } finally {
     await pool.end();
   }
