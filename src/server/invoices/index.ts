@@ -1,7 +1,3 @@
-/**
- * Invoice + step engine public surface (B5). Prefer importing from here or via
- * `src/server/index.ts` from app/server code.
- */
 export {
   createInvoiceInputSchema,
   updateInvoiceInputSchema,
@@ -41,11 +37,37 @@ export {
   type InvoiceDocumentRef,
 } from "./service.js";
 
+export { list, type InvoiceListItem, type InvoiceListResult } from "./list.js";
+export {
+  softDelete,
+  undo,
+  listDeleted,
+  daysLeftUntilPurge,
+  type DeletedInvoiceListItem,
+} from "./lifecycle.js";
+export {
+  UNDO_RETENTION_DAYS,
+  DUE_SOON_DAYS,
+  DASHBOARD_COUNTS_CACHE_TTL_MS,
+  STORAGE_HEALTH_CACHE_TTL_MS,
+} from "./constants.js";
+
 export {
   handleCreateInvoice,
   handleUpdateInvoice,
   handleGetInvoice,
   handleCompleteStep,
+  handleListInvoices,
+  handleSoftDeleteInvoice,
+  handleUndoInvoice,
+  handleListDeletedInvoices,
+  handleDashboardCounts,
+  handleDashboardByStep,
+  handleDashboardNeedsAttention,
+  handleDashboardRecentActivity,
+  handleInvoiceHistory,
+  handleReminders,
+  handleDismissReminder,
   mapErrorToHandlerResult,
   type HandlerResult,
 } from "./handlers.js";

@@ -1,10 +1,9 @@
 /**
- * GET /api/invoices/[id] — detail; PATCH — update.
- * Soft-delete (DELETE) lands with B7.
+ * GET /api/invoices/[id] — detail; PATCH — update; DELETE — soft delete (Admin).
  */
 import { NextResponse } from "next/server";
 import { requireAuthedRequest } from "@/server/auth/request-context";
-import { get, update, updateInvoiceInputSchema } from "@/server/invoices";
+import { get, softDelete, update, updateInvoiceInputSchema } from "@/server/invoices";
 import { assertInputSize, assertSameOrigin } from "@/server/security/csrf";
 import { jsonError } from "@/server/http/map-error";
 import { Validation } from "@/server/kernel/errors";
@@ -39,6 +38,18 @@ export async function PATCH(request: Request, { params }: Params) {
     if (!parsed.success) throw new Validation("Invalid update invoice payload");
     const invoice = await update(ctx, id, parsed.data);
     return NextResponse.json({ invoice });
+  } catch (err) {
+    return jsonError(err);
+  }
+}
+
+export async function DELETE(request: Request, { params }: Params) {
+  try {
+    assertSameOrigin(request);
+    const { ctx } = await requireAuthedRequest(request);
+    const { id } = await params;
+    const result = await softDelete(ctx, id);
+    return NextResponse.json(result);
   } catch (err) {
     return jsonError(err);
   }

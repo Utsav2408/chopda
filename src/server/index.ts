@@ -191,21 +191,40 @@ export {
   create as createInvoice,
   update as updateInvoice,
   get as getInvoice,
+  list as listInvoices,
+  softDelete as softDeleteInvoice,
+  undo as undoInvoice,
+  listDeleted as listDeletedInvoices,
   createInvoiceInputSchema,
   updateInvoiceInputSchema,
   completeStepInputSchema,
+  listInvoicesQuerySchema,
   deriveInvoiceStatus,
   DEFAULT_WAITING_DAYS,
+  UNDO_RETENTION_DAYS,
   assertManualEmailRule,
   handleCreateInvoice,
   handleUpdateInvoice,
   handleGetInvoice,
   handleCompleteStep,
+  handleListInvoices,
+  handleSoftDeleteInvoice,
+  handleUndoInvoice,
+  handleListDeletedInvoices,
+  handleDashboardCounts,
+  handleDashboardByStep,
+  handleDashboardNeedsAttention,
+  handleDashboardRecentActivity,
+  handleInvoiceHistory,
+  handleReminders,
+  handleDismissReminder,
   type InvoiceDetail,
   type CreateInvoiceInput,
   type UpdateInvoiceInput,
   type CompleteStepInput,
   type DerivedInvoiceStatus,
+  type InvoiceListResult,
+  type ListInvoicesQuery,
 } from "./invoices/index.js";
 
 export { complete as completeStep, loadStepAccess } from "./steps/index.js";
@@ -222,3 +241,47 @@ export {
   type DocumentsUploadResult,
   type DocumentsDownloadResult,
 } from "./documents/index.js";
+
+export {
+  counts as dashboardCounts,
+  byStep as dashboardByStep,
+  needsAttention as dashboardNeedsAttention,
+  recentActivity as dashboardRecentActivity,
+} from "./dashboard/index.js";
+
+export { forInvoice as historyForInvoice } from "./history/index.js";
+
+export {
+  compute as computeReminders,
+  dismiss as dismissReminder,
+  runCronSweep as remindersCronSweep,
+} from "./reminders/index.js";
+
+export { runPurge } from "./jobs/index.js";
+
+export { check as healthCheck } from "./health/index.js";
+
+export {
+  get as getCompanyProfile,
+  update as updateCompanyProfile,
+  listBanks,
+  addBank,
+  editBank,
+  deactivateBank,
+  setDefaultBank,
+  summary as companySummary,
+  handleGetProfile,
+  handleUpdateProfile,
+  handleSummary,
+  handleListBanks,
+  handleAddBank,
+  handleEditBank,
+  handleDeactivateBank,
+  handleSetDefaultBank,
+  updateCompanyProfileSchema,
+  addBankAccountSchema,
+  editBankAccountSchema,
+  type CompanyProfileView,
+  type BankAccountView,
+  type CompanySummary,
+} from "./company/index.js";
