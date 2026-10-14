@@ -315,7 +315,23 @@ Tests: `tests/db/constraints.test.ts`, `tests/db/rls.test.ts` (CI `db-tests`).
 | B4-10 | done   | Handlers + `actions/flows.ts` + `/api/flows/*`. Tests: `flow handlers (B4-10)`, `flows API routes (B4-10)`. |
 | B4-11 | done   | Audit on create/edit/publish/archive. Role matrix rows `flows-mutate`, `flows-read`.                        |
 
-### Phase B6 — Storage primitives (adapter only)
+### Phase B5 — Invoices + steps
+
+| ID    | Status | Evidence                                                                                    |
+| ----- | ------ | ------------------------------------------------------------------------------------------- |
+| B5-01 | done   | `src/server/money/money.ts`. Tests: `money utils (B5-01)`.                                  |
+| B5-02 | done   | `src/server/invoices/schema.ts`. Tests: `invoice schemas (B5-02)`.                          |
+| B5-03 | done   | `invoices.create` pins latest published `flow_version_id`. DB: `tests/db/invoices.test.ts`. |
+| B5-04 | done   | `invoices.update` non-flow fields only.                                                     |
+| B5-05 | done   | `steps.complete` — role, order, `validateStepData`.                                         |
+| B5-06 | done   | `src/server/invoices/status.ts`. Tests: `invoice status derivation (B5-06)`.                |
+| B5-07 | done   | `invoices.get`; soft-delete → NotFound for non-Admin.                                       |
+| B5-08 | done   | `email-rule.ts`. Tests: `manual-email rule (B5-08)`.                                        |
+| B5-09 | done   | Handlers + `actions/invoices.ts` + `/api/invoices/*` (create/get/update/complete).          |
+| B5-10 | done   | Audit on create/update/step.complete. Role matrix: `invoices.*`, `steps.complete`.          |
+| B5-11 | done   | DB: flow-version pinning survives republish.                                                |
+
+### Phase B6 — Documents + storage
 
 | ID    | Status | Evidence                                                                                                                                                                |
 | ----- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -323,7 +339,11 @@ Tests: `tests/db/constraints.test.ts`, `tests/db/rls.test.ts` (CI `db-tests`).
 | B6-02 | done   | Contract suite in `tests/storage/contract.ts` runs against in-memory fake + local temp dir (`pnpm test`).                                                               |
 | B6-03 | done   | Local adapter: path-traversal refuse; refuses `NODE_ENV=production` and `VERCEL_ENV=production`+`STORAGE_PROVIDER=local`.                                               |
 | B6-04 | done   | `validate-upload.ts`: magic bytes (pdf/png/jpeg/docx/xlsx), 10 MB cap, `sha256`, `findDuplicateByHash`; `tests/unit/validate-upload.test.ts`.                           |
+| B6-05 | done   | `documents.upload` — validate, sha256 dedupe, orphan cleanup. DB: `tests/db/documents.test.ts`.                                                                         |
+| B6-06 | done   | `documents.download` — stream + audit `document.view`.                                                                                                                  |
+| B6-07 | done   | `GET /api/files/[id]` + `POST /api/files/upload`. Tests: `files API routes (B6-07)`.                                                                                    |
+| B6-08 | done   | Role matrix `documents.upload` / `documents.download`. Schema test `documents has no bytea column`.                                                                     |
 
 ### Later phases
 
-B5, B6-05…08 (documents), B7–B9, and U1–U5 land in follow-up stacked PRs.
+B7–B9 and U1–U5 land in follow-up stacked PRs.
