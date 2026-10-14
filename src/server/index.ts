@@ -58,19 +58,86 @@ export {
   hashSessionToken,
   isSessionValid,
   sessionCookieFlags,
+  createSession,
+  revokeSession,
+  revokeAllSessionsForUser,
+  resolveSession as resolveSessionToken,
   SESSION_ABSOLUTE_TTL_MS,
   SESSION_COOKIE_NAME,
   SESSION_IDLE_TTL_MS,
+  type SessionRow,
+  type SessionCookieFlags,
 } from "./security/session.js";
 
-export { decideLoginRateLimit, type LoginRateLimitDecision } from "./security/rate-limit.js";
+export {
+  decideLoginRateLimit,
+  checkLoginRateLimit,
+  recordLoginAttempt,
+  LOGIN_LOCKOUT_WINDOW_MS,
+  LOGIN_MAX_ATTEMPTS_PER_USERNAME,
+  LOGIN_MAX_ATTEMPTS_PER_IP,
+  type LoginRateLimitDecision,
+  type LoginAttemptCounts,
+} from "./security/rate-limit.js";
 
-export { encryptField, decryptField } from "./security/crypto.js";
+export {
+  encryptField,
+  decryptField,
+  deriveKeyFromSecret,
+  resolveEncryptionKey,
+  ciphertextKeyId,
+  type EncryptionKey,
+} from "./security/crypto.js";
 
 export { assertSameOrigin, assertInputSize, MAX_INPUT_BYTES } from "./security/csrf.js";
 
 export { requireCronSecret } from "./security/cron.js";
 
+export {
+  EXPECTED_SECURITY_HEADERS,
+  CONTENT_SECURITY_POLICY,
+  securityHeadersForNextConfig,
+} from "./security/headers.js";
+
 export { audit, redactForAudit, type AuditInput } from "./audit/write.js";
 
-export { requireRole, requireStepRole, canSeeInvoice } from "./authz/index.js";
+export {
+  requireRole,
+  requireStepRole,
+  canSeeInvoice,
+  type AuthContext,
+  type InvoiceVisibility,
+} from "./authz/index.js";
+
+export {
+  login,
+  logout,
+  logoutAll,
+  resolveSession,
+  listOwnSessions,
+  revokeOwnSession,
+  setSessionCookie,
+  clearSessionCookie,
+  requireAuthedRequest,
+  type LoginInput,
+  type LoginResult,
+  type PublicAuthUser,
+  type ResolvedSession,
+} from "./auth/index.js";
+
+export {
+  create as createUser,
+  list as listUsers,
+  get as getUser,
+  deactivate as deactivateUser,
+  reactivate as reactivateUser,
+  resetPassword,
+  changeOwnPassword,
+  transferAdmin,
+  getOwnProfile,
+  updateOwnProfile,
+  type VisibleUser,
+  type CreateUserResult,
+} from "./users/index.js";
+
+export { jsonError } from "./http/map-error.js";

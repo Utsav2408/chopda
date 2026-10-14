@@ -24,6 +24,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed.ts",
+    "db:bootstrap": "tsx scripts/bootstrap-admin.ts",
     "db:check-drift": "tsx scripts/check-migration-drift.ts",
     "storage:smoke": "tsx scripts/storage-smoke.ts",
     "check:public-env": "tsx scripts/check-public-env-names.ts",
