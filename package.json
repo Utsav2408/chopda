@@ -11,7 +11,7 @@
   "packageManager": "pnpm@12.11.2",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -29,6 +29,8 @@
     "check:public-env": "tsx scripts/check-public-env-names.ts",
     "check:no-ai": "tsx scripts/check-no-ai-before-phase6.ts",
     "check:server-import-ban": "node scripts/check-server-import-ban.mjs",
+    "check:security-headers": "tsx scripts/check-security-headers.ts",
+    "crypto:rotate": "tsx scripts/rotate-encryption-key.ts",
     "prepare": "node scripts/setup-git-hooks.mjs"
   },
   "dependencies": {

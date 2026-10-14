@@ -1,14 +1,14 @@
 import type { NextConfig } from "next";
+import { securityHeadersForNextConfig } from "./src/server/security/headers.shared.mjs";
 
-// Basic security headers (P5-07 early pass). Expanded with a real CSP in Phase 5
-// once all script/style sources are known; see docs/invoice-tracker-github-repo-checklist.md §6.
-const securityHeaders = [
-  { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "X-Frame-Options", value: "DENY" },
-  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-];
+// Security headers + CSP (B2-09). Source of truth: headers.shared.mjs
+const securityHeaders = securityHeadersForNextConfig();
+
+/** Resolve TypeScript ESM `.js` import specifiers to `.ts` / `.tsx` sources. */
+const extensionAlias = {
+  ".js": [".ts", ".tsx", ".js"],
+  ".mjs": [".mts", ".mjs"],
+};
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -19,6 +19,17 @@ const nextConfig: NextConfig = {
         headers: securityHeaders,
       },
     ];
+  },
+  webpack: (config) => {
+    config.resolve = config.resolve ?? {};
+    config.resolve.extensionAlias = {
+      ...(config.resolve.extensionAlias ?? {}),
+      ...extensionAlias,
+    };
+    return config;
+  },
+  turbopack: {
+    resolveExtensions: [".tsx", ".ts", ".jsx", ".js", ".mjs", ".json"],
   },
 };
 
