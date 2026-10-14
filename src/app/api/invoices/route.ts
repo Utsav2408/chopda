@@ -1,13 +1,27 @@
 /**
+ * GET /api/invoices — list with tabs/filters (B7-01).
  * POST /api/invoices — create invoice (Admin/Builder).
- * GET list lands with B7.
  */
 import { NextResponse } from "next/server";
 import { requireAuthedRequest } from "@/server/auth/request-context";
-import { create, createInvoiceInputSchema } from "@/server/invoices";
+import { create, createInvoiceInputSchema, list, listInvoicesQuerySchema } from "@/server/invoices";
 import { assertInputSize, assertSameOrigin } from "@/server/security/csrf";
 import { jsonError } from "@/server/http/map-error";
 import { Validation } from "@/server/kernel/errors";
+
+export async function GET(request: Request) {
+  try {
+    const { ctx } = await requireAuthedRequest(request);
+    const url = new URL(request.url);
+    const raw = Object.fromEntries(url.searchParams.entries());
+    const parsed = listInvoicesQuerySchema.safeParse(raw);
+    if (!parsed.success) throw new Validation("Invalid list query");
+    const result = await list(ctx, parsed.data);
+    return NextResponse.json(result);
+  } catch (err) {
+    return jsonError(err);
+  }
+}
 
 export async function POST(request: Request) {
   try {

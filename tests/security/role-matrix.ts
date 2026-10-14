@@ -1,6 +1,6 @@
 /**
- * Declarative role matrix (B2–B6). Every service/handler op that is role-gated
- * appears here. Later phases (B7+) append rows in their PRs.
+ * Declarative role matrix (B2–B8). Every service/handler op that is role-gated
+ * appears here. B9 may append hardening rows later.
  */
 import { Forbidden, Unauthenticated } from "../../src/server/kernel/errors.js";
 import { requireRole } from "../../src/server/authz/index.js";
@@ -16,6 +16,7 @@ import {
   assertCanUploadDocuments,
   assertCanDownloadDocuments,
 } from "../../src/server/documents/service.js";
+import { requireCronSecret } from "../../src/server/security/cron.js";
 
 export type Actor = "signed-out" | "viewer" | "builder" | "admin";
 
@@ -100,6 +101,21 @@ export const ROLE_MATRIX_EXPECTED_IDS = [
   "steps.complete",
   "documents.upload",
   "documents.download",
+  "invoices.list",
+  "dashboard.read",
+  "history.forInvoice",
+  "reminders.compute",
+  "invoices.softDelete",
+  "invoices.undo",
+  "company.get",
+  "company.update",
+  "company.listBanks",
+  "company.mutateBanks",
+  "company.summary",
+  "health.check",
+  "cron.purge",
+  "cron.reminders",
+  "jobs.purge",
 ] as const;
 
 export const ROLE_MATRIX: MatrixRow[] = [
@@ -400,6 +416,213 @@ export const ROLE_MATRIX: MatrixRow[] = [
     },
     run(actor) {
       assertCanDownloadDocuments(ctxFor(actor));
+    },
+  },
+
+  // --- B7 overview / delete lifecycle ---
+  {
+    id: "invoices.list",
+    operation: "invoices.list",
+    expectations: {
+      "signed-out": "deny",
+      viewer: "allow",
+      builder: "allow",
+      admin: "allow",
+    },
+    run(actor) {
+      requireRole(ctxFor(actor), "admin", "builder", "viewer");
+    },
+  },
+  {
+    id: "dashboard.read",
+    operation: "dashboard.counts/byStep/needsAttention/recentActivity",
+    expectations: {
+      "signed-out": "deny",
+      viewer: "allow",
+      builder: "allow",
+      admin: "allow",
+    },
+    run(actor) {
+      requireRole(ctxFor(actor), "admin", "builder", "viewer");
+    },
+  },
+  {
+    id: "history.forInvoice",
+    operation: "history.forInvoice",
+    expectations: {
+      "signed-out": "deny",
+      viewer: "allow",
+      builder: "allow",
+      admin: "allow",
+    },
+    run(actor) {
+      requireRole(ctxFor(actor), "admin", "builder", "viewer");
+    },
+  },
+  {
+    id: "reminders.compute",
+    operation: "reminders.compute/dismiss",
+    expectations: {
+      "signed-out": "deny",
+      viewer: "allow",
+      builder: "allow",
+      admin: "allow",
+    },
+    run(actor) {
+      requireRole(ctxFor(actor), "admin", "builder", "viewer");
+    },
+  },
+  {
+    id: "invoices.softDelete",
+    operation: "invoices.softDelete",
+    expectations: {
+      "signed-out": "deny",
+      viewer: "deny",
+      builder: "deny",
+      admin: "allow",
+    },
+    run(actor) {
+      requireRole(ctxFor(actor), "admin");
+    },
+  },
+  {
+    id: "invoices.undo",
+    operation: "invoices.undo / listDeleted",
+    expectations: {
+      "signed-out": "deny",
+      viewer: "deny",
+      builder: "deny",
+      admin: "allow",
+    },
+    run(actor) {
+      requireRole(ctxFor(actor), "admin");
+    },
+  },
+
+  // --- B8 company profile + banks ---
+  {
+    id: "company.get",
+    operation: "company.get",
+    expectations: {
+      "signed-out": "deny",
+      viewer: "allow",
+      builder: "allow",
+      admin: "allow",
+    },
+    run(actor) {
+      requireRole(ctxFor(actor), "admin", "builder", "viewer");
+    },
+  },
+  {
+    id: "company.update",
+    operation: "company.update",
+    expectations: {
+      "signed-out": "deny",
+      viewer: "deny",
+      builder: "deny",
+      admin: "allow",
+    },
+    run(actor) {
+      requireRole(ctxFor(actor), "admin");
+    },
+  },
+  {
+    id: "company.listBanks",
+    operation: "company.listBanks",
+    expectations: {
+      "signed-out": "deny",
+      viewer: "deny",
+      builder: "allow",
+      admin: "allow",
+    },
+    run(actor) {
+      requireRole(ctxFor(actor), "admin", "builder");
+    },
+  },
+  {
+    id: "company.mutateBanks",
+    operation: "company.addBank/editBank/deactivateBank/setDefaultBank",
+    expectations: {
+      "signed-out": "deny",
+      viewer: "deny",
+      builder: "deny",
+      admin: "allow",
+    },
+    run(actor) {
+      requireRole(ctxFor(actor), "admin");
+    },
+  },
+  {
+    id: "company.summary",
+    operation: "company.summary",
+    expectations: {
+      "signed-out": "deny",
+      viewer: "allow",
+      builder: "allow",
+      admin: "allow",
+    },
+    run(actor) {
+      requireRole(ctxFor(actor), "admin", "builder", "viewer");
+    },
+  },
+
+  // --- B7 health + cron / jobs ---
+  {
+    id: "health.check",
+    operation: "health.check / GET /api/health (public)",
+    expectations: {
+      "signed-out": "allow",
+      viewer: "allow",
+      builder: "allow",
+      admin: "allow",
+    },
+    run() {
+      // Public smoke endpoint; no requireRole.
+    },
+  },
+  {
+    id: "cron.purge",
+    operation: "GET/POST /api/cron/purge (CRON_SECRET, not role)",
+    expectations: {
+      "signed-out": "deny",
+      viewer: "deny",
+      builder: "deny",
+      admin: "deny",
+    },
+    run() {
+      // Role is irrelevant — missing secret always denies.
+      requireCronSecret(new Request("http://localhost/api/cron/purge"), {
+        secret: "matrix-cron-secret",
+      });
+    },
+  },
+  {
+    id: "cron.reminders",
+    operation: "GET/POST /api/cron/reminders (CRON_SECRET, not role)",
+    expectations: {
+      "signed-out": "deny",
+      viewer: "deny",
+      builder: "deny",
+      admin: "deny",
+    },
+    run() {
+      requireCronSecret(new Request("http://localhost/api/cron/reminders"), {
+        secret: "matrix-cron-secret",
+      });
+    },
+  },
+  {
+    id: "jobs.purge",
+    operation: "jobs.runPurge (cron system admin context)",
+    expectations: {
+      "signed-out": "deny",
+      viewer: "deny",
+      builder: "deny",
+      admin: "allow",
+    },
+    run(actor) {
+      // Service is invoked by cron with an admin RequestContext.
+      requireRole(ctxFor(actor), "admin");
     },
   },
 ];
