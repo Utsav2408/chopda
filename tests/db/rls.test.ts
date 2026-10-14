@@ -152,15 +152,21 @@ describe.skipIf(!connectionString)("B1 RLS smoke", () => {
           role: "viewer",
         });
 
+        // Scope to this test's unrelated row — other suites may leave invoice-tied
+        // audit rows that B7 correctly exposes to authenticated viewers.
         await asAppUser(client, { userId: viewerId, role: "viewer" }, async () => {
-          const rows = await client.query(`SELECT id FROM audit_log`);
+          const rows = await client.query(
+            `SELECT id FROM audit_log WHERE entity = 'test' AND entity_id = '1'`,
+          );
           expect(rows.rowCount).toBe(0);
         });
 
         await client.query("RESET ROLE");
 
         await asAppUser(client, { userId: actorId, role: "admin" }, async () => {
-          const rows = await client.query(`SELECT id FROM audit_log`);
+          const rows = await client.query(
+            `SELECT id FROM audit_log WHERE entity = 'test' AND entity_id = '1'`,
+          );
           expect(rows.rowCount).toBeGreaterThan(0);
         });
       } finally {
