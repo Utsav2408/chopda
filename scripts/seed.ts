@@ -1,16 +1,54 @@
 #!/usr/bin/env tsx
 /**
- * B1-17: Idempotent synthetic seed — 1 admin, 2 builders, 2 viewers, plus
- * raw Standard / Courier flow fixtures (service-layer seed lands in B4-09).
- * Dev/test only; no real data.
+ * B1-17 / B4-09: Idempotent synthetic seed — 1 admin, 2 builders, 2 viewers,
+ * plus Standard / Courier flows via the flows service layer. Dev/test only;
+ * no real data.
  *
  * Password for every seeded user: ChangeMe!dev-only
  */
 import "dotenv/config";
 import * as argon2 from "argon2";
 import { Pool } from "pg";
+import { generateRequestId } from "../src/server/kernel/request-id.js";
+import { resetDbClient } from "../src/server/db/client.js";
+import { resetEnvCache } from "../src/server/env.js";
+import { seedStandardAndCourierFlows } from "../src/server/flows/seed-flows.js";
+import type { RequestContext } from "../src/server/db/with-user.js";
 
 const DEV_PASSWORD = "ChangeMe!dev-only";
+
+/** Fill gaps so getEnv()/getDb() can boot for service-layer seeding. */
+function ensureSeedEnv(connectionString: string): void {
+  process.env.DATABASE_URL ??= connectionString;
+  process.env.DATABASE_URL_DIRECT ??= connectionString;
+  process.env.SESSION_SECRET ??= "seed-dev-only-session-secret-32chars!";
+  process.env.ENCRYPTION_KEY ??= "seed-dev-only-encryption-key-32chars!";
+  process.env.STORAGE_PROVIDER ??= "local";
+  process.env.FILE_STORAGE_DIR ??= "/tmp/chopda-seed-storage";
+  process.env.CRON_SECRET ??= "seed-dev-only-cron-secret";
+  resetEnvCache();
+}
+
+/** Rename legacy B1 raw-SQL Standard/Courier when they are not the B4 5-step shape. */
+async function retireLegacyFlowIfWrongShape(pool: Pool, name: string): Promise<void> {
+  const result = await pool.query<{ id: string; n: number }>(
+    `SELECT ft.id, coalesce(count(fs.id), 0)::int AS n
+     FROM flow_templates ft
+     LEFT JOIN flow_versions fv
+       ON fv.template_id = ft.id AND fv.published_at IS NOT NULL
+     LEFT JOIN flow_steps fs ON fs.version_id = fv.id
+     WHERE ft.name = $1
+     GROUP BY ft.id`,
+    [name],
+  );
+  const row = result.rows[0];
+  if (!row) return;
+  if (row.n === 5) return;
+  await pool.query(`UPDATE flow_templates SET name = $1, updated_at = now() WHERE id = $2`, [
+    `${name} (legacy ${Date.now()})`,
+    row.id,
+  ]);
+}
 
 const USERS = [
   { username: "admin", role: "admin", displayName: "Seed Admin" },
@@ -25,10 +63,12 @@ async function main() {
   if (!connectionString) {
     throw new Error("Set DATABASE_URL_DIRECT (or DATABASE_URL) before seeding.");
   }
+  ensureSeedEnv(connectionString);
 
   const passwordHash = await argon2.hash(DEV_PASSWORD, { type: argon2.argon2id });
   const pool = new Pool({ connectionString });
 
+  let adminId: string;
   try {
     await pool.query("BEGIN");
 
@@ -44,87 +84,37 @@ async function main() {
     const admin = await pool.query<{ id: string }>(
       `SELECT id FROM users WHERE username = 'admin' LIMIT 1`,
     );
-    const adminId = admin.rows[0]?.id;
+    adminId = admin.rows[0]?.id ?? "";
     if (!adminId) {
-      throw new Error("Seed admin missing after insert");
+      throw new Error("Seed admin user missing after upsert.");
     }
 
-    // Raw Standard flow (4 steps) — B4-09 will replace via service layer.
-    const existing = await pool.query(
-      `SELECT 1 FROM flow_templates WHERE name = 'Standard' LIMIT 1`,
-    );
-    if (existing.rowCount === 0) {
-      const tmpl = await pool.query<{ id: string }>(
-        `INSERT INTO flow_templates (name, status, created_by)
-         VALUES ('Standard', 'published', $1)
-         RETURNING id`,
-        [adminId],
-      );
-      const templateId = tmpl.rows[0]!.id;
-      const ver = await pool.query<{ id: string }>(
-        `INSERT INTO flow_versions (template_id, version_no, published_at)
-         VALUES ($1, 1, now())
-         RETURNING id`,
-        [templateId],
-      );
-      const versionId = ver.rows[0]!.id;
-      const steps = [
-        ["Receive", "builder"],
-        ["Validate", "builder"],
-        ["Deliver", "builder"],
-        ["Confirm payment", "admin"],
-      ] as const;
-      for (let i = 0; i < steps.length; i++) {
-        const [name, role] = steps[i]!;
-        await pool.query(
-          `INSERT INTO flow_steps (version_id, position, name, instructions, allowed_role, fields)
-           VALUES ($1, $2, $3, $4, $5::user_role, '[]'::jsonb)`,
-          [versionId, i + 1, name, `${name} step`, role],
-        );
-      }
-    }
-
-    const courier = await pool.query(`SELECT 1 FROM flow_templates WHERE name = 'Courier' LIMIT 1`);
-    if (courier.rowCount === 0) {
-      const tmpl = await pool.query<{ id: string }>(
-        `INSERT INTO flow_templates (name, status, created_by)
-         VALUES ('Courier', 'published', $1)
-         RETURNING id`,
-        [adminId],
-      );
-      const templateId = tmpl.rows[0]!.id;
-      const ver = await pool.query<{ id: string }>(
-        `INSERT INTO flow_versions (template_id, version_no, published_at)
-         VALUES ($1, 1, now())
-         RETURNING id`,
-        [templateId],
-      );
-      const versionId = ver.rows[0]!.id;
-      const steps = [
-        ["Receive", "builder"],
-        ["Validate", "builder"],
-        ["Deliver", "builder"],
-        ["Courier handoff", "builder"],
-        ["Confirm payment", "admin"],
-      ] as const;
-      for (let i = 0; i < steps.length; i++) {
-        const [name, role] = steps[i]!;
-        await pool.query(
-          `INSERT INTO flow_steps (version_id, position, name, instructions, allowed_role, fields)
-           VALUES ($1, $2, $3, $4, $5::user_role, '[]'::jsonb)`,
-          [versionId, i + 1, name, `${name} step`, role],
-        );
-      }
-    }
+    // Retire pre-B4 raw fixtures so service-layer Standard/Courier can be created.
+    await retireLegacyFlowIfWrongShape(pool, "Standard");
+    await retireLegacyFlowIfWrongShape(pool, "Courier");
 
     await pool.query("COMMIT");
-    console.log("[seed] OK — users + Standard/Courier raw fixtures (password: ChangeMe!dev-only)");
   } catch (err) {
     await pool.query("ROLLBACK");
     throw err;
   } finally {
     await pool.end();
   }
+
+  await resetDbClient();
+
+  const ctx: RequestContext = {
+    userId: adminId,
+    role: "admin",
+    requestId: generateRequestId(),
+  };
+
+  const { standardId, courierId } = await seedStandardAndCourierFlows(ctx);
+  console.log(
+    `[seed] idempotent seed complete (users + Standard=${standardId.slice(0, 8)}… Courier=${courierId.slice(0, 8)}…).`,
+  );
+
+  await resetDbClient();
 }
 
 main().catch((err) => {

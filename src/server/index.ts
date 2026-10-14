@@ -141,3 +141,44 @@ export {
 } from "./users/index.js";
 
 export { jsonError } from "./http/map-error.js";
+
+export {
+  assertCanMutateFlows,
+  assertCanReadFlows,
+  createDraft,
+  duplicate,
+  addStep,
+  editStep,
+  removeStep,
+  reorderSteps,
+  publish,
+  archive,
+  canStartNewInvoices,
+  assertCanStartNewInvoices,
+  list as listFlows,
+  get as getFlow,
+  diffAgainst,
+  validateStepData,
+  flowFieldsSchema,
+  seedStandardAndCourierFlows,
+  handleCreateDraft,
+  handlePublish,
+  handleArchive,
+  handleList,
+  handleGet,
+  type FlowDetail,
+  type FlowListItem,
+  type FlowDiff,
+  type FlowFields,
+} from "./flows/index.js";
+
+export {
+  createLocalStorageAdapter,
+  getStorageAdapter,
+  toObjectKey,
+  DOCUMENTS_KEY_PREFIX,
+  validateUpload,
+  findDuplicateByHash,
+  MAX_UPLOAD_BYTES,
+  type StorageAdapter,
+} from "./storage/index.js";

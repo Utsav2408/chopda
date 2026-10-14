@@ -1,29 +1,40 @@
 #!/usr/bin/env tsx
-// Scripted smoke test for the local storage adapter (P0-04 evidence):
-// write, read, delete a file in FILE_STORAGE_DIR, and confirm it is gitignored.
+// Scripted smoke test for the local storage adapter (B6-01 / P0-04 evidence):
+// put, getStream, delete a file in FILE_STORAGE_DIR, and confirm it is gitignored.
 import "dotenv/config";
 import { execSync } from "node:child_process";
 import { createLocalStorageAdapter } from "../src/server/storage/index.js";
 
+async function readStreamToString(stream: NodeJS.ReadableStream): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
 async function main() {
-  const key = `smoke/${Date.now()}.txt`;
+  const key = `smoke-${Date.now()}`;
   const payload = "chopda storage smoke test — synthetic data only";
 
   const storage = createLocalStorageAdapter();
 
-  await storage.write(key, payload);
-  console.log(`[storage-smoke] wrote ${key}`);
+  await storage.healthCheck();
+  console.log("[storage-smoke] healthCheck ok");
+
+  await storage.put(key, payload, { contentType: "text/plain" });
+  console.log(`[storage-smoke] put ${key}`);
 
   const existsAfterWrite = await storage.exists(key);
-  if (!existsAfterWrite) throw new Error("exists() returned false right after write()");
+  if (!existsAfterWrite) throw new Error("exists() returned false right after put()");
 
-  const readBack = (await storage.read(key)).toString("utf8");
+  const readBack = await readStreamToString(await storage.getStream(key));
   if (readBack !== payload) {
     throw new Error(
-      `read() mismatch: expected ${JSON.stringify(payload)}, got ${JSON.stringify(readBack)}`,
+      `getStream() mismatch: expected ${JSON.stringify(payload)}, got ${JSON.stringify(readBack)}`,
     );
   }
-  console.log(`[storage-smoke] read back ${key} correctly`);
+  console.log(`[storage-smoke] getStream back ${key} correctly`);
 
   await storage.delete(key);
   const existsAfterDelete = await storage.exists(key);

@@ -1,0 +1,71 @@
+/**
+ * Flow engine public surface (B4). Prefer importing from here or via
+ * `src/server/index.ts` from app/server code.
+ */
+export {
+  MAX_FIELDS_PER_STEP,
+  MAX_FIELD_KEY_LENGTH,
+  MAX_FIELD_LABEL_LENGTH,
+  MAX_NAME_LENGTH,
+  MAX_INSTRUCTIONS_LENGTH,
+  MAX_TEXT_VALUE_LENGTH,
+  FIELD_TYPES,
+  USER_ROLES,
+  FLOW_STATUSES,
+  flowFieldSchema,
+  flowFieldsSchema,
+  flowStepInputSchema,
+  createDraftInputSchema,
+  editStepInputSchema,
+  validateStepData,
+  parseFlowFields,
+  type FieldType,
+  type FlowField,
+  type FlowFields,
+  type FlowStepInput,
+  type CreateDraftInput,
+  type EditStepInput,
+  type FlowStatus,
+  type FlowUserRole,
+  type StepDataIssue,
+} from "./schema.js";
+
+export {
+  assertCanMutateFlows,
+  assertCanReadFlows,
+  createDraft,
+  duplicate,
+  addStep,
+  editStep,
+  removeStep,
+  reorderSteps,
+  publish,
+  archive,
+  canStartNewInvoices,
+  assertCanStartNewInvoices,
+  list,
+  get,
+  diffAgainst,
+  type FlowStepView,
+  type FlowDetail,
+  type FlowListItem,
+  type FlowDiff,
+} from "./service.js";
+
+export {
+  handleCreateDraft,
+  handleDuplicate,
+  handleAddStep,
+  handleEditStep,
+  handleRemoveStep,
+  handleReorderSteps,
+  handlePublish,
+  handleArchive,
+  handleList,
+  handleGet,
+  handleDiffAgainst,
+  mapErrorToHandlerResult,
+  type HandlerResult,
+} from "./handlers.js";
+
+export { seedStandardAndCourierFlows, SEED_FLOW_NAMES } from "./seed-flows.js";
