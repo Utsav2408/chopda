@@ -63,10 +63,7 @@ export {
   SESSION_IDLE_TTL_MS,
 } from "./security/session.js";
 
-export {
-  decideLoginRateLimit,
-  type LoginRateLimitDecision,
-} from "./security/rate-limit.js";
+export { decideLoginRateLimit, type LoginRateLimitDecision } from "./security/rate-limit.js";
 
 export { encryptField, decryptField } from "./security/crypto.js";
 
