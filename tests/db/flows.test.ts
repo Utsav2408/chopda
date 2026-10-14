@@ -133,10 +133,7 @@ describe.skipIf(!connectionString)("flows service (B4)", () => {
     const db = getDb();
     let thrown: unknown;
     try {
-      await db
-        .update(flowSteps)
-        .set({ name: "hacked" })
-        .where(eq(flowSteps.id, publishedStepId));
+      await db.update(flowSteps).set({ name: "hacked" }).where(eq(flowSteps.id, publishedStepId));
     } catch (err) {
       thrown = err;
     }
