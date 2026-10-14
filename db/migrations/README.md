@@ -1,23 +1,34 @@
 # Database migrations
 
-Hand-reviewed SQL migrations. `drizzle-kit generate` writes files here from the
-(not-yet-created) Drizzle schema; review every generated file like code,
-especially anything touching RLS policies, triggers, partial indexes, or
-`citext` columns — Drizzle's schema DSL cannot express those, so they are
-written by hand (see `drizzle-kit generate --custom`).
+Hand-reviewed SQL migrations applied by `drizzle-orm`'s node-postgres migrator
+(`pnpm db:migrate`). Layout:
 
-Rules (see `AGENTS.md` and `docs/invoice-tracker-github-repo-checklist.md` §5):
+- `meta/_journal.json` — ordered migration tags
+- `meta/*_snapshot.json` — Drizzle schema snapshots for `pnpm db:generate` /
+  migration-drift CI
+- `NNNN_name.sql` — forward-only SQL (split on `--> statement-breakpoint`)
 
-- **Forward-only.** Drizzle has no built-in rollback. To undo a bad migration in
-  a real environment, write a new migration — never edit or delete a file that
-  has already been applied anywhere.
-- **No real data.** Seed/fixture data referenced by a migration or its tests
-  must be synthetic.
-- **No production credentials here or in CI config.** Migrations run with a
-  separate "owner" role; the app's runtime role (`app_user`, P1-02) never has
-  schema-change privileges.
+`drizzle-kit generate` writes baseline DDL from `src/server/db/schema.ts`.
+Review every generated file like code. **RLS policies, triggers, DB roles,
+partial indexes, and `citext` extras that the DSL cannot express are written by
+hand** (see `0000_b1_schema.sql` extensions + `0001_b1_triggers_roles_rls.sql`).
 
-The first migration (`P1-01`: extensions, `user_role` enum, `users`, `sessions`,
-`audit_log`) has not landed yet — this folder is currently a placeholder. Once it
-does, Wave D's `db-tests` and `migration-drift` CI jobs turn on (see
-`STATUS.md`).
+## Rules
+
+- **Forward-only.** Never edit or delete a migration that has been applied
+  anywhere — write a new one to fix a mistake (`AGENTS.md`).
+- **No real data.** Seeds/fixtures are synthetic only (`pnpm db:seed`).
+- **Roles.** Migrations run as the owner/direct URL (`DATABASE_URL_DIRECT`).
+  Runtime should eventually use limited role `app_user` via `DATABASE_URL`
+  (local/CI password is synthetic `chopda_app`; on Neon, GRANT the same
+  privileges to the pooled role). `app_user` cannot `UPDATE`/`DELETE`
+  `audit_log`.
+
+## Commands
+
+```bash
+pnpm db:migrate       # apply pending SQL
+pnpm db:generate      # diff schema.ts → new migration (review!)
+pnpm db:check-drift   # CI: generate must leave db/migrations clean
+pnpm db:seed          # synthetic users + Standard/Courier flow fixtures
+```

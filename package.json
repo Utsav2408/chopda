@@ -23,6 +23,8 @@
     "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:check-drift": "tsx scripts/check-migration-drift.ts",
     "storage:smoke": "tsx scripts/storage-smoke.ts",
     "check:public-env": "tsx scripts/check-public-env-names.ts",
     "check:no-ai": "tsx scripts/check-no-ai-before-phase6.ts",

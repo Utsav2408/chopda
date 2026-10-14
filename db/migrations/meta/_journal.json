@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791951285693,
+      "tag": "0000_b1_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791951285700,
+      "tag": "0001_b1_triggers_roles_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791953313021,
+      "tag": "0002_b1_list_indexes",
+      "breakpoints": true
+    }
+  ]
+}
