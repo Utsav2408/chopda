@@ -6,6 +6,32 @@ import "server-only";
 // code ever imports it — see docs/invoice-tracker-github-repo-checklist.md §6 and
 // AGENTS.md "Where things live".
 //
-// Nothing is exported yet: the real data access layer (DAL) lands in Phase 1
-// (P1-08 withUser(tx) helper, P1-13 audit writer, etc).
+// Kernel primitives (errors, Result, request id, logger) and the Zod env loader
+// are re-exported here for app/server code (B0-09 / B0-10). Scripts and unit
+// tests may import kernel/env modules directly (those files do not import
+// "server-only" themselves — same pattern as storage).
+
 export const SERVER_ONLY_MARKER = true;
+
+export {
+  Unauthenticated,
+  Forbidden,
+  NotFound,
+  Validation,
+  Conflict,
+  RateLimited,
+  Internal,
+  type AppError,
+  ok,
+  err,
+  isOk,
+  isErr,
+  type Ok,
+  type Err,
+  type Result,
+  generateRequestId,
+  log,
+  redactSecrets,
+} from "./kernel/index.js";
+
+export { loadEnv, getEnv, resetEnvCache, type AppEnv } from "./env.js";

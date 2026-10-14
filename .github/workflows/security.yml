@@ -68,7 +68,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: pnpm audit (production dependencies)
-        run: pnpm audit --prod || true # advisory only until a baseline is agreed; tighten later
+        # Fail on high/critical advisories in production deps (B0-05).
+        run: pnpm audit --prod --audit-level=high
 
       - name: NEXT_PUBLIC_ secret-name check
         run: pnpm check:public-env

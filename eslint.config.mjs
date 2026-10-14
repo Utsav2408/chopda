@@ -20,7 +20,7 @@ const eslintConfig = [
     files: ["src/app/**/*.{ts,tsx}", "src/components/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [
-        "warn",
+        "error",
         {
           patterns: [
             {
@@ -31,6 +31,13 @@ const eslintConfig = [
           ],
         },
       ],
+    },
+  },
+  {
+    // Route handlers are server-only; they may import the DAL (B3+).
+    files: ["src/app/api/**/*.{ts,tsx}", "src/app/**/route.ts"],
+    rules: {
+      "no-restricted-imports": "off",
     },
   },
 ];
