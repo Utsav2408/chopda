@@ -1,15 +1,16 @@
 /**
- * Declarative role matrix (B2-12 / B3-14). Every service/handler op that is
- * role-gated appears here. The test file runs every row for signed-out /
+ * Declarative role matrix (B2-12 / B3-14 / B4-11). Every service/handler op that
+ * is role-gated appears here. The test file runs every row for signed-out /
  * viewer / builder / admin and fails on unexpected allows or unexpected denials.
  *
- * Later phases (B4+) append rows in their PRs.
+ * Later phases (B5+) append rows in their PRs.
  */
 import { Forbidden, Unauthenticated } from "../../src/server/kernel/errors.js";
 import { requireRole } from "../../src/server/authz/index.js";
 import type { RequestContext, UserRole } from "../../src/server/db/with-user.js";
 import { create as usersCreate } from "../../src/server/users/service.js";
 import type { UserRow } from "../../src/server/users/repo.js";
+import { assertCanMutateFlows, assertCanReadFlows } from "../../src/server/flows/service.js";
 
 export type Actor = "signed-out" | "viewer" | "builder" | "admin";
 
@@ -86,6 +87,8 @@ export const ROLE_MATRIX_EXPECTED_IDS = [
   "sessions.revokeOwn",
   "auth.logoutAll",
   "auth.login",
+  "flows-mutate",
+  "flows-read",
 ] as const;
 
 export const ROLE_MATRIX: MatrixRow[] = [
@@ -275,6 +278,34 @@ export const ROLE_MATRIX: MatrixRow[] = [
     },
     run() {
       // Login is intentionally unauthenticated; matrix documents the allow.
+    },
+  },
+
+  // --- B4 flows ---
+  {
+    id: "flows-mutate",
+    operation: "flows.create/edit/publish/archive",
+    expectations: {
+      "signed-out": "deny",
+      viewer: "deny",
+      builder: "allow",
+      admin: "allow",
+    },
+    run(actor) {
+      assertCanMutateFlows(ctxFor(actor));
+    },
+  },
+  {
+    id: "flows-read",
+    operation: "flows.list/get/diff",
+    expectations: {
+      "signed-out": "deny",
+      viewer: "allow",
+      builder: "allow",
+      admin: "allow",
+    },
+    run(actor) {
+      assertCanReadFlows(ctxFor(actor));
     },
   },
 ];

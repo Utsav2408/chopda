@@ -16,6 +16,7 @@ export default defineConfig({
       "tests/unit/**/*.test.tsx",
       "tests/db/**/*.test.ts",
       "tests/security/**/*.test.ts",
+      "tests/storage/**/*.test.ts",
     ],
     exclude: ["tests/e2e/**"],
     coverage: {

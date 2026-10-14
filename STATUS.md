@@ -299,6 +299,31 @@ Tests: `tests/db/constraints.test.ts`, `tests/db/rls.test.ts` (CI `db-tests`).
 | B3-13 | done   | API routes under `src/app/api/users/**`, `src/app/api/me/**` + `src/server/actions/users.ts` (cookie-resolved ctx, Zod).                                               |
 | B3-14 | done   | `tests/security/role-matrix.ts` appends all B3 ops; harness expects 0 unexpected allows.                                                                               |
 
+### Phase B4 — Flow engine
+
+| ID    | Status | Evidence                                                                                                    |
+| ----- | ------ | ----------------------------------------------------------------------------------------------------------- |
+| B4-01 | done   | `src/server/flows/schema.ts` + fixtures. Tests: `flow fields schema (B4-01)`.                               |
+| B4-02 | done   | `validateStepData`. Tests: `validateStepData (B4-02)`.                                                      |
+| B4-03 | done   | `createDraft` / `duplicate`. Role matrix `flows-mutate`. DB: `tests/db/flows.test.ts`.                      |
+| B4-04 | done   | `addStep` / `editStep` / `removeStep` / `reorderSteps` draft-only.                                          |
+| B4-05 | done   | `publish` freezes draft; edits fork new draft.                                                              |
+| B4-06 | done   | `archive` + `canStartNewInvoices` / `assertCanStartNewInvoices`.                                            |
+| B4-07 | done   | `list` / `get` with step chips, status, published version, active invoice count.                            |
+| B4-08 | done   | `diffAgainst` returns 1-based differing step numbers.                                                       |
+| B4-09 | done   | `seedStandardAndCourierFlows` via service; `scripts/seed.ts` updated.                                       |
+| B4-10 | done   | Handlers + `actions/flows.ts` + `/api/flows/*`. Tests: `flow handlers (B4-10)`, `flows API routes (B4-10)`. |
+| B4-11 | done   | Audit on create/edit/publish/archive. Role matrix rows `flows-mutate`, `flows-read`.                        |
+
+### Phase B6 — Storage primitives (adapter only)
+
+| ID    | Status | Evidence                                                                                                                                                                |
+| ----- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B6-01 | done   | `StorageAdapter` is `put`/`getStream`/`delete`/`exists`/`healthCheck`; keys are document IDs (`documents/` prefix); `getStorageAdapter()` local; refuses `r2` until B9. |
+| B6-02 | done   | Contract suite in `tests/storage/contract.ts` runs against in-memory fake + local temp dir (`pnpm test`).                                                               |
+| B6-03 | done   | Local adapter: path-traversal refuse; refuses `NODE_ENV=production` and `VERCEL_ENV=production`+`STORAGE_PROVIDER=local`.                                               |
+| B6-04 | done   | `validate-upload.ts`: magic bytes (pdf/png/jpeg/docx/xlsx), 10 MB cap, `sha256`, `findDuplicateByHash`; `tests/unit/validate-upload.test.ts`.                           |
+
 ### Later phases
 
-B4–B9 and U1–U5 land in follow-up stacked PRs.
+B5, B6-05…08 (documents), B7–B9, and U1–U5 land in follow-up stacked PRs.
