@@ -309,3 +309,17 @@ export const userPreferences = pgTable("user_preferences", {
     .default(sql`'{}'::jsonb`),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Daily R2 / storage Class A / Class B operation counters (B9-08g).
+ * Free-tier budgets: 1M Class A / 10M Class B per month; health alerts at 70%/90%.
+ */
+export const storageOpsDaily = pgTable("storage_ops_daily", {
+  day: date("day").primaryKey(),
+  classA: bigint("class_a", { mode: "bigint" })
+    .notNull()
+    .default(sql`0`),
+  classB: bigint("class_b", { mode: "bigint" })
+    .notNull()
+    .default(sql`0`),
+});
