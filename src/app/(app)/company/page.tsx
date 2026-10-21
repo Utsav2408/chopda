@@ -1,5 +1,5 @@
 import { requireAppUser } from "@/actions/auth";
-import { companyGetAction, companyListBanksAction, companySummaryAction } from "@/actions/company";
+import { companyLoadPageAction } from "@/actions/company";
 import { ErrorState } from "@/components/ui";
 import type {
   ClientBankAccount,
@@ -19,37 +19,31 @@ export default async function CompanyPage() {
   let loadError = false;
 
   try {
-    const [profileRaw, summaryRaw] = await Promise.all([
-      companyGetAction(),
-      companySummaryAction(),
-    ]);
+    const page = await companyLoadPageAction();
 
     profile = {
-      legalName: profileRaw.legalName,
-      gstin: profileRaw.gstin,
-      pan: profileRaw.pan,
-      invoiceDefaults: profileRaw.invoiceDefaults,
-      updatedAt: profileRaw.updatedAt,
+      legalName: page.profile.legalName,
+      gstin: page.profile.gstin,
+      pan: page.profile.pan,
+      invoiceDefaults: page.profile.invoiceDefaults,
+      updatedAt: page.profile.updatedAt,
     };
 
     summary = {
-      admin: summaryRaw.admin
+      admin: page.summary.admin
         ? {
-            id: summaryRaw.admin.id,
-            username: summaryRaw.admin.username,
-            displayName: summaryRaw.admin.displayName,
-            role: summaryRaw.admin.role,
+            id: page.summary.admin.id,
+            username: page.summary.admin.username,
+            displayName: page.summary.admin.displayName,
+            role: page.summary.admin.role,
           }
         : null,
-      roleCounts: summaryRaw.roleCounts,
+      roleCounts: page.summary.roleCounts,
     };
 
-    if (user.role === "viewer") {
-      banksDenied = true;
-    } else {
-      try {
-        const listed = await companyListBanksAction();
-        banks = listed.map((b) => ({
+    banksDenied = page.banksDenied;
+    banks = page.banks
+      ? page.banks.map((b) => ({
           id: b.id,
           label: b.label,
           bankName: b.bankName,
@@ -61,11 +55,8 @@ export default async function CompanyPage() {
           isActive: b.isActive,
           createdAt: b.createdAt,
           updatedAt: b.updatedAt,
-        }));
-      } catch {
-        banksDenied = true;
-      }
-    }
+        }))
+      : null;
   } catch {
     loadError = true;
   }

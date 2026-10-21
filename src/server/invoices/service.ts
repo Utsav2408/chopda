@@ -1,21 +1,35 @@
 /**
  * Invoice services (B5-03, B5-04, B5-07).
  */
+import { and, desc, eq, inArray, or } from "drizzle-orm";
 import { audit } from "../audit/write.js";
 import { canSeeInvoice, requireRole, type AuthContext } from "../authz/index.js";
 import type { AppTx } from "../db/client.js";
+import { auditLog, documents, invoiceSteps, users } from "../db/schema.js";
 import { withUser, type RequestContext, type UserRole } from "../db/with-user.js";
 import * as flowRepo from "../flows/repo.js";
 import { parseFlowFields } from "../flows/schema.js";
-import { assertCanStartNewInvoices } from "../flows/service.js";
+import type { HistoryEntry } from "../history/service.js";
 import { Conflict, NotFound, Validation } from "../kernel/errors.js";
 import { paiseToRupees, rupeesToPaise } from "../money/money.js";
+import { getUserSafeById } from "../users/repo.js";
 import * as repo from "./repo.js";
 import type { CreateInvoiceInput, UpdateInvoiceInput } from "./schema.js";
 import { DEFAULT_WAITING_DAYS, deriveInvoiceStatus, type DerivedInvoiceStatus } from "./status.js";
 
 const MUTATE_ROLES: UserRole[] = ["admin", "builder"];
 const READ_ROLES: UserRole[] = ["admin", "builder", "viewer"];
+const OWNER_ROLES: UserRole[] = ["admin", "builder"];
+
+async function assertEligibleOwner(tx: AppTx, ownerId: string): Promise<void> {
+  const owner = await getUserSafeById(tx, ownerId);
+  if (!owner || !owner.isActive) {
+    throw new Validation("Owner must be an active Admin or Builder");
+  }
+  if (!OWNER_ROLES.includes(owner.role)) {
+    throw new Validation("Owner cannot be a Viewer");
+  }
+}
 
 export function assertCanMutateInvoices(ctx: AuthContext): RequestContext {
   return requireRole(ctx, ...MUTATE_ROLES);
@@ -174,14 +188,19 @@ export async function buildDetail(tx: AppTx, invoice: repo.InvoiceRow): Promise<
 
 /**
  * Create an invoice pinned to the flow's latest published version (B5-03).
+ * Flow eligibility is checked inside the same transaction (no extra withUser).
  */
 export async function create(ctx: AuthContext, input: CreateInvoiceInput): Promise<InvoiceDetail> {
   const authed = assertCanMutateInvoices(ctx);
-  await assertCanStartNewInvoices(authed, input.flowId);
-
   const amountMinor = rupeesToPaise(input.amountRupees);
 
   return withUser(authed, async (tx) => {
+    const template = await flowRepo.getTemplateById(tx, input.flowId);
+    if (!template) throw new NotFound();
+    if (template.status === "archived") {
+      throw new Conflict("Archived flows cannot start new invoices");
+    }
+
     const existing = await repo.getInvoiceByNo(tx, input.invoiceNo);
     if (existing) {
       throw new Conflict(`Invoice number "${input.invoiceNo}" already exists`);
@@ -201,6 +220,8 @@ export async function create(ctx: AuthContext, input: CreateInvoiceInput): Promi
     for (const step of flowSteps) {
       parseFlowFields(step.fields);
     }
+
+    await assertEligibleOwner(tx, input.ownerId);
 
     const firstStep = flowSteps[0]!;
     const invoice = await repo.insertInvoice(tx, {
@@ -294,7 +315,10 @@ export async function update(
     }
     if (input.issueDate !== undefined) patch.issueDate = input.issueDate;
     if (input.dueDate !== undefined) patch.dueDate = input.dueDate;
-    if (input.ownerId !== undefined) patch.ownerId = input.ownerId;
+    if (input.ownerId !== undefined) {
+      await assertEligibleOwner(tx, input.ownerId);
+      patch.ownerId = input.ownerId;
+    }
     if (input.extra !== undefined) patch.extra = input.extra;
     if (input.status === "cancelled") patch.status = "cancelled";
 
@@ -347,6 +371,115 @@ export async function get(ctx: AuthContext, invoiceId: string): Promise<InvoiceD
       throw new NotFound();
     }
     return buildDetail(tx, invoice);
+  });
+}
+
+const NON_ADMIN_HISTORY_ACTIONS = new Set([
+  "invoice.create",
+  "invoice.update",
+  "invoice.softDelete",
+  "invoice.undo",
+  "invoice.step.complete",
+  "document.upload",
+  "document.view",
+]);
+
+async function loadHistoryInTx(
+  tx: AppTx,
+  authed: RequestContext,
+  invoiceId: string,
+): Promise<HistoryEntry[]> {
+  const steps = await tx
+    .select({ id: invoiceSteps.id })
+    .from(invoiceSteps)
+    .where(eq(invoiceSteps.invoiceId, invoiceId));
+  const stepIds = steps.map((s) => s.id);
+
+  let docIds: string[] = [];
+  if (stepIds.length > 0) {
+    const docs = await tx
+      .select({ id: documents.id })
+      .from(documents)
+      .where(inArray(documents.invoiceStepId, stepIds));
+    docIds = docs.map((d) => d.id);
+  }
+
+  const entityFilters = [and(eq(auditLog.entity, "invoice"), eq(auditLog.entityId, invoiceId))];
+  if (stepIds.length > 0) {
+    entityFilters.push(
+      and(eq(auditLog.entity, "invoice_step"), inArray(auditLog.entityId, stepIds)),
+    );
+  }
+  if (docIds.length > 0) {
+    entityFilters.push(and(eq(auditLog.entity, "document"), inArray(auditLog.entityId, docIds)));
+  }
+
+  const rows = await tx
+    .select({
+      id: auditLog.id,
+      action: auditLog.action,
+      entity: auditLog.entity,
+      entityId: auditLog.entityId,
+      actorId: auditLog.actorId,
+      at: auditLog.at,
+      before: auditLog.before,
+      after: auditLog.after,
+    })
+    .from(auditLog)
+    .where(or(...entityFilters))
+    .orderBy(desc(auditLog.at));
+
+  if (authed.role !== "admin") {
+    return rows.filter((e) => NON_ADMIN_HISTORY_ACTIONS.has(e.action));
+  }
+  return rows;
+}
+
+export type InvoiceDetailPage = {
+  invoice: InvoiceDetail;
+  history: HistoryEntry[];
+  userNames: Record<string, string>;
+};
+
+/**
+ * Single-txn detail page load: invoice + history + slim display-name map.
+ */
+export async function loadInvoiceDetailPage(
+  ctx: AuthContext,
+  invoiceId: string,
+): Promise<InvoiceDetailPage> {
+  const authed = assertCanReadInvoices(ctx);
+
+  return withUser(authed, async (tx) => {
+    const invoiceRow = await repo.getInvoiceById(tx, invoiceId);
+    if (!invoiceRow || !canSeeInvoice(authed, invoiceRow)) {
+      throw new NotFound();
+    }
+
+    const invoice = await buildDetail(tx, invoiceRow);
+    const history = await loadHistoryInTx(tx, authed, invoiceId);
+
+    const nameIds = new Set<string>();
+    nameIds.add(invoice.ownerId);
+    nameIds.add(invoice.createdBy);
+    for (const s of invoice.steps) {
+      if (s.completedBy) nameIds.add(s.completedBy);
+    }
+    for (const h of history) {
+      if (h.actorId) nameIds.add(h.actorId);
+    }
+
+    const ids = [...nameIds];
+    const userNames: Record<string, string> = {};
+    if (ids.length > 0) {
+      const nameRows = await tx
+        .select({ id: users.id, displayName: users.displayName })
+        .from(users)
+        .where(inArray(users.id, ids));
+      for (const r of nameRows) userNames[r.id] = r.displayName;
+    }
+
+    return { invoice, history, userNames };
   });
 }
 

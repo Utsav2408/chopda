@@ -32,9 +32,11 @@ export {
   update,
   get,
   buildDetail,
+  loadInvoiceDetailPage,
   type InvoiceDetail,
   type InvoiceStepDetail,
   type InvoiceDocumentRef,
+  type InvoiceDetailPage,
 } from "./service.js";
 
 export { list, type InvoiceListItem, type InvoiceListResult } from "./list.js";

@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 import { invoicesCreateAction } from "@/actions/invoices";
 import { FormField } from "@/components/forms/FormField";
 import { fieldErrorsFromZod, type FieldErrors } from "@/components/forms/map-field-errors";
 import { createInvoiceInputSchema } from "@/lib/create-invoice-schema";
+import { useAppNavigate } from "@/lib/navigate";
 
 export type FlowOption = { id: string; name: string };
 export type UserOption = { id: string; displayName: string; username: string };
@@ -18,7 +18,7 @@ export type NewInvoiceFormProps = {
 };
 
 export function NewInvoiceForm({ flows, users, defaultOwnerId }: NewInvoiceFormProps) {
-  const router = useRouter();
+  const navigate = useAppNavigate();
   const [pending, startTransition] = useTransition();
   const [errors, setErrors] = useState<FieldErrors | null>(null);
 
@@ -45,8 +45,8 @@ export function NewInvoiceForm({ flows, users, defaultOwnerId }: NewInvoiceFormP
     startTransition(async () => {
       try {
         const created = await invoicesCreateAction(parsed.data);
-        router.push(`/invoices/${created.id}`);
-        router.refresh();
+        navigate.push(`/invoices/${created.id}`);
+        navigate.refresh();
       } catch (err) {
         const message = err instanceof Error ? err.message : "Could not create invoice";
         setErrors({ _form: message });

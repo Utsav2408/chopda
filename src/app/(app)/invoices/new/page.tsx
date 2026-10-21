@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireCurrentUser } from "@/actions/auth";
-import { flowsListAction } from "@/actions/flows";
+import { flowsListSummariesAction } from "@/actions/flows";
 import { usersListAction } from "@/actions/users";
 import { NewInvoiceForm } from "@/components/invoices/NewInvoiceForm";
 import { ErrorState } from "@/components/ui";
@@ -18,15 +18,17 @@ export default async function NewInvoicePage() {
   let loadError: string | null = null;
 
   try {
-    const [flowRows, userRows] = await Promise.all([flowsListAction(), usersListAction()]);
+    const [flowRows, userRows] = await Promise.all([flowsListSummariesAction(), usersListAction()]);
     flows = flowRows
       .filter((f) => f.publishedVersionNo != null && f.status !== "archived")
       .map((f) => ({ id: f.id, name: f.name }));
-    users = userRows.map((u) => ({
-      id: u.id,
-      displayName: u.displayName,
-      username: u.username,
-    }));
+    users = userRows
+      .filter((u) => u.isActive && (u.role === "admin" || u.role === "builder"))
+      .map((u) => ({
+        id: u.id,
+        displayName: u.displayName,
+        username: u.username,
+      }));
   } catch (err) {
     loadError = err instanceof Error ? err.message : "Could not load form options";
   }

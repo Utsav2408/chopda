@@ -72,6 +72,14 @@ export type FlowListItem = {
   activeInvoiceCount: number;
 };
 
+/** Lightweight flow row for invoice filter / new-invoice dropdowns (no steps). */
+export type FlowSummary = {
+  id: string;
+  name: string;
+  status: FlowStatus;
+  publishedVersionNo: number | null;
+};
+
 export type FlowDiff = {
   flowId: string;
   otherFlowId: string;
@@ -597,6 +605,38 @@ export async function archive(ctx: AuthContext, flowId: string): Promise<FlowDet
 }
 
 /**
+ * Restore an archived flow. Becomes published if a published version exists,
+ * otherwise draft (Admin/Builder).
+ */
+export async function unarchive(ctx: AuthContext, flowId: string): Promise<FlowDetail> {
+  const authed = assertCanMutateFlows(ctx);
+
+  return withUser(authed, async (tx) => {
+    const template = await repo.getTemplateById(tx, flowId);
+    if (!template) throw new NotFound();
+    if (asStatus(template.status) !== "archived") {
+      return buildDetail(tx, template);
+    }
+
+    const published = await repo.getLatestPublishedVersion(tx, template.id);
+    const nextStatus: FlowStatus = published ? "published" : "draft";
+    const updated = (await repo.updateTemplateStatus(tx, template.id, nextStatus)) ?? template;
+
+    await audit({
+      tx,
+      ctx: authed,
+      action: "flow.unarchive",
+      entity: "flow_template",
+      entityId: template.id,
+      before: { status: "archived" },
+      after: { status: nextStatus },
+    });
+
+    return buildDetail(tx, updated);
+  });
+}
+
+/**
  * Whether new invoices may be started on this flow (B4-06 / B5).
  * Archived → false; never-published draft → false; published → true.
  */
@@ -632,19 +672,90 @@ export async function list(ctx: AuthContext): Promise<FlowListItem[]> {
 
   return withUser(authed, async (tx) => {
     const templates = await repo.listTemplates(tx);
-    const items: FlowListItem[] = [];
-    for (const template of templates) {
-      const detail = await buildDetail(tx, template);
-      items.push({
-        id: detail.id,
-        name: detail.name,
-        status: detail.status,
-        publishedVersionNo: detail.publishedVersionNo,
-        steps: detail.steps.map((s) => ({ stepNumber: s.stepNumber, name: s.name })),
-        activeInvoiceCount: detail.activeInvoiceCount,
-      });
+    if (templates.length === 0) return [];
+
+    const templateIds = templates.map((t) => t.id);
+    const [allVersions, activeCounts] = await Promise.all([
+      repo.listVersionsForTemplates(tx, templateIds),
+      repo.countActiveInvoicesByTemplate(tx, templateIds),
+    ]);
+
+    const draftsByTemplate = new Map<string, FlowVersionRow>();
+    const publishedByTemplate = new Map<string, FlowVersionRow>();
+    for (const v of allVersions) {
+      if (v.publishedAt == null) {
+        const cur = draftsByTemplate.get(v.templateId);
+        if (!cur || v.versionNo > cur.versionNo) draftsByTemplate.set(v.templateId, v);
+      } else {
+        const cur = publishedByTemplate.get(v.templateId);
+        if (!cur || v.versionNo > cur.versionNo) publishedByTemplate.set(v.templateId, v);
+      }
     }
-    return items;
+
+    const workingIds: string[] = [];
+    const workingByTemplate = new Map<string, FlowVersionRow>();
+    for (const t of templates) {
+      const working = draftsByTemplate.get(t.id) ?? publishedByTemplate.get(t.id);
+      if (working) {
+        workingByTemplate.set(t.id, working);
+        workingIds.push(working.id);
+      }
+    }
+
+    const allSteps = await repo.listStepsForVersions(tx, workingIds);
+    const stepsByVersion = new Map<string, FlowStepRow[]>();
+    for (const s of allSteps) {
+      const list = stepsByVersion.get(s.versionId) ?? [];
+      list.push(s);
+      stepsByVersion.set(s.versionId, list);
+    }
+
+    return templates.map((template) => {
+      const published = publishedByTemplate.get(template.id);
+      const working = workingByTemplate.get(template.id);
+      const steps = working
+        ? (stepsByVersion.get(working.id) ?? []).map((s) => ({
+            stepNumber: s.position + 1,
+            name: s.name,
+          }))
+        : [];
+      return {
+        id: template.id,
+        name: template.name,
+        status: asStatus(template.status),
+        publishedVersionNo: published?.versionNo ?? null,
+        steps,
+        activeInvoiceCount: activeCounts.get(template.id) ?? 0,
+      };
+    });
+  });
+}
+
+/** Summaries only — for invoice filters / create form (no steps or counts). */
+export async function listSummaries(ctx: AuthContext): Promise<FlowSummary[]> {
+  const authed = assertCanReadFlows(ctx);
+
+  return withUser(authed, async (tx) => {
+    const templates = await repo.listTemplates(tx);
+    if (templates.length === 0) return [];
+
+    const versions = await repo.listVersionsForTemplates(
+      tx,
+      templates.map((t) => t.id),
+    );
+    const publishedByTemplate = new Map<string, FlowVersionRow>();
+    for (const v of versions) {
+      if (v.publishedAt == null) continue;
+      const cur = publishedByTemplate.get(v.templateId);
+      if (!cur || v.versionNo > cur.versionNo) publishedByTemplate.set(v.templateId, v);
+    }
+
+    return templates.map((template) => ({
+      id: template.id,
+      name: template.name,
+      status: asStatus(template.status),
+      publishedVersionNo: publishedByTemplate.get(template.id)?.versionNo ?? null,
+    }));
   });
 }
 

@@ -1,12 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 import { FormField, fieldErrorsFromServer, type FieldErrors } from "@/components/forms";
+import { useAppNavigate } from "@/lib/navigate";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password";
 
 export function ChangePasswordForm() {
-  const router = useRouter();
+  const navigate = useAppNavigate();
   const [pending, startTransition] = useTransition();
   const [errors, setErrors] = useState<FieldErrors | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -49,8 +49,8 @@ export function ChangePasswordForm() {
           return;
         }
 
-        router.replace("/dashboard");
-        router.refresh();
+        navigate.replace("/dashboard");
+        navigate.refresh();
       } catch {
         setFormError("Could not change password. Try again.");
       }

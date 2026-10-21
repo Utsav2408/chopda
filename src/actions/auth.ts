@@ -4,37 +4,28 @@
  */
 "use server";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { resolveSession } from "../server/auth/index.js";
-import { SESSION_COOKIE_NAME } from "../server/security/constants.js";
+import { requireActionSession, resolveSessionFromCookies } from "../server/auth/cached-session.js";
 import type { CurrentUser } from "../lib/auth-dto.js";
 
 /** Resolve the signed-in user from the session cookie, or null. */
 export async function getOptionalCurrentUser(): Promise<CurrentUser | null> {
-  const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE_NAME)?.value;
-  const resolved = await resolveSession(token);
+  const resolved = await resolveSessionFromCookies();
   return resolved?.user ?? null;
+}
+
+/**
+ * Resolve the signed-in user for UI server actions / pages, or redirect to login.
+ * Uses session-gone when a stale cookie is present (avoids proxy↔app loops).
+ */
+export async function requireActionUser(nextPath?: string): Promise<CurrentUser> {
+  const resolved = await requireActionSession(nextPath);
+  return resolved.user;
 }
 
 /** Resolve the signed-in user from the session cookie, or redirect to login. */
 export async function requireCurrentUser(nextPath?: string): Promise<CurrentUser> {
-  const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE_NAME)?.value;
-  if (!token) {
-    const login = nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login";
-    redirect(login);
-  }
-  const resolved = await resolveSession(token);
-  if (!resolved) {
-    // Clear stale cookie via route so middleware ↔ app cannot redirect-loop.
-    const gone = nextPath
-      ? `/api/auth/session-gone?next=${encodeURIComponent(nextPath)}`
-      : "/api/auth/session-gone";
-    redirect(gone);
-  }
-  return resolved.user;
+  return requireActionUser(nextPath);
 }
 
 /**
@@ -42,7 +33,7 @@ export async function requireCurrentUser(nextPath?: string): Promise<CurrentUser
  * Used by the app shell layout.
  */
 export async function requireAppUser(nextPath?: string): Promise<CurrentUser> {
-  const user = await requireCurrentUser(nextPath);
+  const user = await requireActionUser(nextPath);
   if (user.mustChangePassword) {
     redirect("/change-password");
   }

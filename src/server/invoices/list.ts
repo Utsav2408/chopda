@@ -1,7 +1,7 @@
 /**
  * invoices.list — tabs, filters, sort, keyset pagination (B7-01).
  */
-import { eq, inArray, isNull, sql } from "drizzle-orm";
+import { eq, inArray, isNull } from "drizzle-orm";
 import type { AuthContext } from "../authz/index.js";
 import type { AppTx } from "../db/client.js";
 import { flowSteps, flowVersions, invoices, invoiceSteps } from "../db/schema.js";
@@ -88,19 +88,8 @@ async function loadListCandidates(tx: AppTx): Promise<LoadedRow[]> {
   if (rows.length === 0) return [];
 
   const ids = rows.map((r) => r.id);
-  const stepStats = await tx
-    .select({
-      invoiceId: invoiceSteps.invoiceId,
-      completed: sql<number>`count(*) filter (where ${invoiceSteps.status} = 'completed')::int`,
-      total: sql<number>`count(*)::int`,
-    })
-    .from(invoiceSteps)
-    .where(inArray(invoiceSteps.invoiceId, ids))
-    .groupBy(invoiceSteps.invoiceId);
-
-  const statsById = new Map(stepStats.map((s) => [s.invoiceId, s]));
-
-  const prevCompleted = await tx
+  // One step query: progress counts + opened-at derivation (was two round-trips).
+  const stepRows = await tx
     .select({
       invoiceId: invoiceSteps.invoiceId,
       flowStepId: invoiceSteps.flowStepId,
@@ -112,17 +101,20 @@ async function loadListCandidates(tx: AppTx): Promise<LoadedRow[]> {
     .innerJoin(flowSteps, eq(invoiceSteps.flowStepId, flowSteps.id))
     .where(inArray(invoiceSteps.invoiceId, ids));
 
-  const stepsByInvoice = new Map<string, typeof prevCompleted>();
-  for (const s of prevCompleted) {
+  const stepsByInvoice = new Map<string, typeof stepRows>();
+  for (const s of stepRows) {
     const list = stepsByInvoice.get(s.invoiceId) ?? [];
     list.push(s);
     stepsByInvoice.set(s.invoiceId, list);
   }
 
   return rows.map((r) => {
-    const stats = statsById.get(r.id);
     const steps = stepsByInvoice.get(r.id) ?? [];
     let openedAt: Date | null = r.createdAt;
+    let completedSteps = 0;
+    for (const s of steps) {
+      if (s.status === "completed") completedSteps += 1;
+    }
     if (r.currentStepId) {
       const current = steps.find((s) => s.flowStepId === r.currentStepId);
       if (current) {
@@ -135,8 +127,8 @@ async function loadListCandidates(tx: AppTx): Promise<LoadedRow[]> {
     return {
       ...r,
       currentStepOpenedAt: openedAt,
-      completedSteps: stats?.completed ?? 0,
-      totalSteps: stats?.total ?? 0,
+      completedSteps,
+      totalSteps: steps.length,
     };
   });
 }

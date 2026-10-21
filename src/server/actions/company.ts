@@ -4,7 +4,6 @@
  */
 "use server";
 
-import { cookies } from "next/headers";
 import {
   addBank,
   addBankAccountSchema,
@@ -13,31 +12,32 @@ import {
   editBankAccountSchema,
   get,
   listBanks,
+  loadCompanyPage,
   setDefaultBank,
   summary,
   update,
   updateCompanyProfileSchema,
   type BankAccountView,
+  type CompanyPageData,
   type CompanyProfileView,
   type CompanySummary,
 } from "../company/index.js";
-import { resolveSession } from "../auth/index.js";
-import { SESSION_COOKIE_NAME } from "../security/constants.js";
-import { Unauthenticated, Validation } from "../kernel/errors.js";
+import { requireActionSession } from "../auth/cached-session.js";
+import { Validation } from "../kernel/errors.js";
 
 async function ctxFromCookies() {
-  const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE_NAME)?.value;
-  const resolved = await resolveSession(token);
-  if (!resolved) {
-    throw new Unauthenticated();
-  }
+  const resolved = await requireActionSession();
   return resolved.ctx;
 }
 
 export async function companyGetAction(): Promise<CompanyProfileView> {
   const ctx = await ctxFromCookies();
   return get(ctx);
+}
+
+export async function companyLoadPageAction(): Promise<CompanyPageData> {
+  const ctx = await ctxFromCookies();
+  return loadCompanyPage(ctx);
 }
 
 export async function companyUpdateAction(raw: unknown): Promise<CompanyProfileView> {

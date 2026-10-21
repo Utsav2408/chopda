@@ -2,12 +2,15 @@
  * Company profile, bank accounts, and summary (B8-01..03).
  * Every function re-checks roles via requireRole.
  */
+import { and, eq, sql } from "drizzle-orm";
 import { audit } from "../audit/write.js";
 import { requireRole } from "../authz/index.js";
+import type { AppTx } from "../db/client.js";
+import { users } from "../db/schema.js";
 import { withUser, type RequestContext } from "../db/with-user.js";
 import { Conflict, NotFound, Validation } from "../kernel/errors.js";
 import { decryptField, encryptField } from "../security/crypto.js";
-import { list as listUsers, type VisibleUser } from "../users/service.js";
+import type { VisibleUser } from "../users/service.js";
 import type {
   AddBankAccountInput,
   EditBankAccountInput,
@@ -438,24 +441,111 @@ export async function setDefaultBank(
   });
 }
 
+async function summaryInTx(tx: AppTx, viewer: RequestContext): Promise<CompanySummary> {
+  const countRows = await tx
+    .select({
+      role: users.role,
+      n: sql<number>`count(*)::int`,
+    })
+    .from(users)
+    .groupBy(users.role);
+
+  const roleCounts = { admin: 0, builder: 0, viewer: 0 };
+  for (const row of countRows) {
+    if (row.role === "admin") roleCounts.admin = Number(row.n);
+    else if (row.role === "builder") roleCounts.builder = Number(row.n);
+    else if (row.role === "viewer") roleCounts.viewer = Number(row.n);
+  }
+
+  const [adminRow] = await tx
+    .select({
+      id: users.id,
+      username: users.username,
+      role: users.role,
+      isActive: users.isActive,
+      displayName: users.displayName,
+      email: users.email,
+      phone: users.phone,
+      photoObjectKey: users.photoObjectKey,
+      mustChangePassword: users.mustChangePassword,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    })
+    .from(users)
+    .where(and(eq(users.role, "admin"), eq(users.isActive, true)))
+    .limit(1);
+
+  let admin: VisibleUser | null = null;
+  if (adminRow) {
+    const canSeeContact = viewer.role === "admin" || viewer.userId === adminRow.id;
+    admin = {
+      id: adminRow.id,
+      username: adminRow.username,
+      role: adminRow.role,
+      isActive: adminRow.isActive,
+      displayName: adminRow.displayName,
+      email: canSeeContact ? adminRow.email : null,
+      phone: canSeeContact ? adminRow.phone : null,
+      photoObjectKey: adminRow.photoObjectKey,
+      mustChangePassword: adminRow.mustChangePassword,
+      createdAt: adminRow.createdAt,
+      updatedAt: adminRow.updatedAt,
+    };
+  }
+
+  return { admin, roleCounts };
+}
+
 /**
  * Current Admin + role counts (B8-03).
- * Uses users.list for counts so contact visibility matches list rules.
+ * Aggregates in SQL — does not load the full user list.
  */
 export async function summary(ctx: RequestContext | null | undefined): Promise<CompanySummary> {
-  requireRole(ctx, "admin", "builder", "viewer");
-  const users = await listUsers(ctx);
-  const roleCounts = { admin: 0, builder: 0, viewer: 0 };
-  let admin: VisibleUser | null = null;
-  for (const user of users) {
-    if (user.role === "admin") {
-      roleCounts.admin += 1;
-      if (user.isActive) admin = user;
-    } else if (user.role === "builder") {
-      roleCounts.builder += 1;
-    } else if (user.role === "viewer") {
-      roleCounts.viewer += 1;
+  const authed = requireRole(ctx, "admin", "builder", "viewer");
+  return withUser(authed, async (tx) => summaryInTx(tx, authed));
+}
+
+export type CompanyPageData = {
+  profile: CompanyProfileView;
+  summary: CompanySummary;
+  banks: BankAccountView[] | null;
+  banksDenied: boolean;
+};
+
+/**
+ * Single-txn company page load: profile + summary + banks (when allowed).
+ */
+export async function loadCompanyPage(
+  ctx: RequestContext | null | undefined,
+): Promise<CompanyPageData> {
+  const authed = requireRole(ctx, "admin", "builder", "viewer");
+  const crypto = defaultCrypto();
+  const canBanks = authed.role === "admin" || authed.role === "builder";
+
+  return withUser(authed, async (tx) => {
+    const row = await getCompanyProfile(tx);
+    const profile: CompanyProfileView = row
+      ? projectProfile(row, authed, crypto)
+      : {
+          legalName: "",
+          gstin: null,
+          invoiceDefaults: {},
+          updatedAt: new Date(0),
+          ...(authed.role === "admin" ? { pan: null } : {}),
+        };
+
+    const summaryValue = await summaryInTx(tx, authed);
+
+    if (!canBanks) {
+      return { profile, summary: summaryValue, banks: null, banksDenied: true };
     }
-  }
-  return { admin, roleCounts };
+
+    const bankRows = await listBankAccounts(tx);
+    return {
+      profile,
+      summary: summaryValue,
+      banks: bankRows.map((b) => projectBankAccount(b, crypto)),
+      banksDenied: false,
+    };
+  });
 }

@@ -4,11 +4,11 @@
  */
 export const SESSION_COOKIE_NAME = "chopda_session";
 
-/** Absolute session lifetime from creation (B2-02). */
-export const SESSION_ABSOLUTE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+/** Absolute session lifetime from creation (24h; was 30d in B2-02). */
+export const SESSION_ABSOLUTE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-/** Idle timeout: session dies if last_seen_at is older than this (B2-02). */
-export const SESSION_IDLE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+/** Idle timeout: session dies if last_seen_at is older than this (24h; was 7d in B2-02). */
+export const SESSION_IDLE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 /** Minimum password length enforced by the password module (B2-01). */
 export const PASSWORD_MIN_LENGTH = 10;

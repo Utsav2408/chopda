@@ -128,7 +128,7 @@ export function DashboardView({
             ["completed", counts.completed],
           ] as const
         ).map(([label, value]) => (
-          <div key={label} className="dash-count">
+          <div key={label} className="dash-count" data-status={label}>
             <div className="dash-count__value">{value}</div>
             <div className="dash-count__label">{label}</div>
           </div>

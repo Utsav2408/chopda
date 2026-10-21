@@ -3,9 +3,13 @@ export {
   byStep,
   needsAttention,
   recentActivity,
+  loadDashboard,
+  loadDerivedStatuses,
   clearDashboardCountsCache,
   type DashboardCounts,
   type DashboardByStepRow,
   type NeedsAttentionItem,
   type RecentActivityItem,
+  type DashboardBundle,
+  type DerivedInvoiceRow,
 } from "./service.js";

@@ -1,12 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { invoicesSoftDeleteAction, invoicesUndoAction } from "@/actions/invoices";
 import { ConfirmDialog } from "@/components/ui";
+import { useAppNavigate } from "@/lib/navigate";
 
 export function SoftDeleteButton({ invoiceId }: { invoiceId: string }) {
-  const router = useRouter();
+  const navigate = useAppNavigate();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -17,8 +17,8 @@ export function SoftDeleteButton({ invoiceId }: { invoiceId: string }) {
       try {
         await invoicesSoftDeleteAction(invoiceId);
         setOpen(false);
-        router.push("/invoices");
-        router.refresh();
+        navigate.push("/invoices");
+        navigate.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Delete failed");
       }
@@ -50,7 +50,7 @@ export function SoftDeleteButton({ invoiceId }: { invoiceId: string }) {
 }
 
 export function UndoDeleteButton({ invoiceId }: { invoiceId: string }) {
-  const router = useRouter();
+  const navigate = useAppNavigate();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -59,8 +59,8 @@ export function UndoDeleteButton({ invoiceId }: { invoiceId: string }) {
     startTransition(async () => {
       try {
         await invoicesUndoAction(invoiceId);
-        router.push(`/invoices/${invoiceId}`);
-        router.refresh();
+        navigate.push(`/invoices/${invoiceId}`);
+        navigate.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Restore failed");
       }

@@ -23,8 +23,9 @@ and track every invoice and its documents through them. Built with Next.js
 - Node.js (see [`.nvmrc`](.nvmrc) — currently Node 24.x, the current LTS line).
 - [pnpm](https://pnpm.io/) as the package manager (see `packageManager` in
   [`package.json`](package.json)).
-- A PostgreSQL database for local dev (a [Neon](https://neon.tech) **dev** branch
-  seeded with fake data is recommended; a local Postgres also works).
+- A PostgreSQL database for local dev (a [Neon](https://neon.tech) project in
+  **Singapore** for local/Preview latency; Production uses a separate Neon
+  project in **US East** — see `DECISIONS.md`. A local Postgres also works).
 
 ## Setup
 
@@ -32,10 +33,18 @@ and track every invoice and its documents through them. Built with Next.js
 corepack enable          # or: npm install -g pnpm
 pnpm install
 cp .env.example .env     # fill in local, dev-only values — never real secrets
+pnpm db:migrate          # apply SQL migrations
+pnpm db:seed             # synthetic users + Standard/Courier flows (dev only)
 ```
 
 See [`.env.example`](.env.example) for every variable and what it protects. Nothing
 in `.env` is ever committed; the file is gitignored.
+
+There is **no self-registration**. Sign-in uses Admin-issued accounts. After
+`pnpm db:seed`, use username `admin` (also `builder1` / `viewer1`, …) with
+password `ChangeMe!dev-only`. The first login forces a password change. To create
+only the first Admin instead of the full seed, set `BOOTSTRAP_ADMIN_*` in `.env`
+and run `pnpm db:bootstrap`.
 
 ## Run
 

@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { stepsCompleteAction } from "@/actions/invoices";
 import { fieldErrorsFromServer, type FieldErrors } from "@/components/forms/map-field-errors";
 import { StepForm } from "@/components/steps/StepForm";
+import { apiFetch } from "@/lib/api-fetch";
 import type { StepFieldValues } from "@/lib/flow-fields";
 import type { InvoiceStepUi } from "@/lib/invoice-ui";
 
@@ -25,10 +26,9 @@ export function InvoiceStepComplete({ invoiceId, step, canComplete }: InvoiceSte
     body.set("invoiceStepId", step.id);
     body.set("filename", file.name);
     body.set("fieldKey", fieldKey);
-    const res = await fetch("/api/files/upload", {
+    const res = await apiFetch("/api/files/upload", {
       method: "POST",
       body,
-      credentials: "same-origin",
     });
     const json = (await res.json().catch(() => null)) as {
       error?: string;

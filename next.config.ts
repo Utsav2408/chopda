@@ -12,6 +12,8 @@ const extensionAlias = {
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Hide the bottom-left Dev Tools "Rendering" badge (dev-only; spinner/progress stay).
+  devIndicators: false,
   async headers() {
     return [
       {
@@ -19,6 +21,12 @@ const nextConfig: NextConfig = {
         headers: securityHeaders,
       },
     ];
+  },
+  // Next's webpack resolve reads this (not a custom webpack() mutate alone).
+  // Required so TypeScript ESM `import "./foo.js"` resolves to `foo.ts`.
+  // Turbopack does not honor this in Next 16.4 — keep `next dev --webpack`.
+  experimental: {
+    extensionAlias,
   },
   webpack: (config) => {
     config.resolve = config.resolve ?? {};

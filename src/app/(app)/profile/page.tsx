@@ -1,22 +1,17 @@
 import { requireAppUser } from "@/actions/auth";
-import { sessionsListOwnAction, usersGetOwnProfileAction } from "@/actions/users";
+import { usersGetOwnProfileAction } from "@/actions/users";
 import { ErrorState } from "@/components/ui";
-import type { ClientSession, ProfileUser } from "@/lib/profile-dto";
+import type { ProfileUser } from "@/lib/profile-dto";
 import { ProfileView } from "./ProfileView";
 
 export default async function ProfilePage() {
   await requireAppUser("/profile");
 
   let profile: ProfileUser | null = null;
-  let sessions: ClientSession[] | null = null;
   let loadError = false;
 
   try {
-    const [user, sessionResult] = await Promise.all([
-      usersGetOwnProfileAction(),
-      sessionsListOwnAction(),
-    ]);
-
+    const user = await usersGetOwnProfileAction();
     profile = {
       id: user.id,
       username: user.username,
@@ -27,22 +22,11 @@ export default async function ProfilePage() {
       photoObjectKey: user.photoObjectKey,
       prefs: user.prefs ?? null,
     };
-
-    sessions = sessionResult.sessions.map((s) => ({
-      id: s.id,
-      userAgent: s.userAgent,
-      ip: s.ip,
-      createdAt: s.createdAt,
-      lastSeenAt: s.lastSeenAt,
-      expiresAt: s.expiresAt,
-      revokedAt: s.revokedAt,
-      isCurrent: s.id === sessionResult.currentSessionId,
-    }));
   } catch {
     loadError = true;
   }
 
-  if (loadError || !profile || !sessions) {
+  if (loadError || !profile) {
     return (
       <ErrorState
         title="Could not load profile"
@@ -51,5 +35,5 @@ export default async function ProfilePage() {
     );
   }
 
-  return <ProfileView user={profile} sessions={sessions} />;
+  return <ProfileView user={profile} />;
 }

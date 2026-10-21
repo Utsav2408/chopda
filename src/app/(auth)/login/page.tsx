@@ -25,7 +25,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     <>
       <p className="auth-layout__brand">Chopda</p>
       <h1>Sign in</h1>
-      <p className="auth-layout__lede">Use your username and password to open the tracker.</p>
+      <p className="auth-layout__lede">
+        Use the username and password your Admin gave you to open the tracker.
+      </p>
       <LoginForm nextPath={nextPath} />
     </>
   );

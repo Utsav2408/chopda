@@ -1,10 +1,23 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
+import { useAppNavigate } from "@/lib/navigate";
 
-export function SignOutButton() {
-  const router = useRouter();
+export type SignOutButtonProps = {
+  className?: string;
+  icon?: ReactNode;
+  /** Menu-row layout for the account dropdown. */
+  variant?: "button" | "menu";
+  onSignedOut?: () => void;
+};
+
+export function SignOutButton({
+  className,
+  icon,
+  variant = "button",
+  onSignedOut,
+}: SignOutButtonProps) {
+  const navigate = useAppNavigate();
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -20,18 +33,30 @@ export function SignOutButton() {
           setError("Could not sign out. Try again.");
           return;
         }
-        router.replace("/login");
-        router.refresh();
+        onSignedOut?.();
+        navigate.replace("/login");
+        navigate.refresh();
       } catch {
         setError("Could not sign out. Try again.");
       }
     });
   }
 
+  const label = pending ? "Signing out…" : "Sign out";
+
   return (
-    <div>
-      <button type="button" className="ui-btn ui-btn--ghost" onClick={onSignOut} disabled={pending}>
-        {pending ? "Signing out…" : "Sign out"}
+    <div className={variant === "menu" ? "user-menu__sign-out" : undefined}>
+      <button
+        type="button"
+        role={variant === "menu" ? "menuitem" : undefined}
+        className={className ?? "ui-btn ui-btn--ghost"}
+        onClick={onSignOut}
+        disabled={pending}
+        title={label}
+        aria-label={label}
+      >
+        {icon}
+        <span>{label}</span>
       </button>
       {error ? (
         <p className="ui-field-error" role="alert">

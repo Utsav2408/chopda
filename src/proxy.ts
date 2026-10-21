@@ -1,9 +1,11 @@
 /**
  * Coarse session-cookie gate (B2-10 / U2). Cookie presence only — never hits the DB.
  * Real auth/role checks live in server actions and route handlers.
+ *
+ * Next.js 16 renamed the `middleware` file convention to `proxy`.
  */
 import { NextResponse, type NextRequest } from "next/server";
-// No ".js" suffix: Turbopack middleware resolution does not remap it.
+// No ".js" suffix: Turbopack proxy resolution does not remap it.
 import { SESSION_COOKIE_NAME } from "./server/security/constants";
 
 /** Paths that never require a session cookie. */
@@ -37,7 +39,7 @@ function redirectToLogin(request: NextRequest, pathname: string): NextResponse {
   return NextResponse.redirect(login);
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
 

@@ -5,6 +5,7 @@
 
 import {
   companyGetAction as getCompany,
+  companyLoadPageAction as loadCompanyPage,
   companyUpdateAction as updateCompany,
   companySummaryAction as companySummary,
   companyListBanksAction as listBanks,
@@ -16,6 +17,10 @@ import {
 
 export async function companyGetAction() {
   return getCompany();
+}
+
+export async function companyLoadPageAction() {
+  return loadCompanyPage();
 }
 
 export async function companyUpdateAction(raw: unknown) {

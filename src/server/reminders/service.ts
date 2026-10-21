@@ -1,13 +1,14 @@
 /**
  * In-app reminders (B7-06).
  */
-import { and, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { requireRole, type AuthContext } from "../authz/index.js";
-import { flowSteps, invoices, invoiceSteps, reminderState, userPreferences } from "../db/schema.js";
+import { invoices, reminderState, userPreferences } from "../db/schema.js";
 import { withUser, type RequestContext } from "../db/with-user.js";
+import { loadDerivedStatuses } from "../dashboard/service.js";
 import { DUE_SOON_DAYS } from "../invoices/constants.js";
 import { assertCanReadInvoices } from "../invoices/service.js";
-import { DEFAULT_WAITING_DAYS, daysOpen, deriveInvoiceStatus } from "../invoices/status.js";
+import { DEFAULT_WAITING_DAYS, daysOpen } from "../invoices/status.js";
 
 export type ReminderKind = "waiting" | "dueSoon";
 
@@ -97,67 +98,13 @@ export async function compute(ctx: AuthContext, opts?: { now?: Date }): Promise<
       .where(and(eq(reminderState.userId, authed.userId), isNotNull(reminderState.dismissedAt)));
     const dismissedKeys = new Set(dismissed.map((d) => d.reminderKey));
 
-    const rows = await tx
-      .select({
-        id: invoices.id,
-        invoiceNo: invoices.invoiceNo,
-        partyName: invoices.partyName,
-        dueDate: invoices.dueDate,
-        storedStatus: invoices.status,
-        createdAt: invoices.createdAt,
-        currentStepId: invoices.currentStepId,
-      })
-      .from(invoices)
-      .where(isNull(invoices.deletedAt));
-
-    if (rows.length === 0) return [];
-
-    const allSteps = await tx
-      .select({
-        invoiceId: invoiceSteps.invoiceId,
-        flowStepId: invoiceSteps.flowStepId,
-        status: invoiceSteps.status,
-        completedAt: invoiceSteps.completedAt,
-        position: flowSteps.position,
-      })
-      .from(invoiceSteps)
-      .innerJoin(flowSteps, eq(invoiceSteps.flowStepId, flowSteps.id));
-
-    const stepsByInvoice = new Map<string, typeof allSteps>();
-    for (const s of allSteps) {
-      const list = stepsByInvoice.get(s.invoiceId) ?? [];
-      list.push(s);
-      stepsByInvoice.set(s.invoiceId, list);
-    }
-
+    const derived = await loadDerivedStatuses(tx, now, { waitingDays: prefs.waitingDays });
     const out: ReminderItem[] = [];
 
-    for (const r of rows) {
+    for (const r of derived) {
       if (r.storedStatus === "completed" || r.storedStatus === "cancelled") continue;
 
-      const steps = stepsByInvoice.get(r.id) ?? [];
-      let openedAt: Date | null = r.createdAt;
-      if (r.currentStepId) {
-        const current = steps.find((s) => s.flowStepId === r.currentStepId);
-        if (current) {
-          const prev = steps
-            .filter(
-              (s) => s.position < current.position && s.status === "completed" && s.completedAt,
-            )
-            .sort((a, b) => b.position - a.position)[0];
-          openedAt = prev?.completedAt ?? r.createdAt;
-        }
-      }
-
-      const status = deriveInvoiceStatus({
-        status: r.storedStatus,
-        dueDate: r.dueDate,
-        currentStepOpenedAt: openedAt,
-        waitingDays: prefs.waitingDays,
-        now,
-      });
-
-      if (prefs.waitingEnabled && status === "waiting" && openedAt) {
+      if (prefs.waitingEnabled && r.status === "waiting" && r.currentStepOpenedAt) {
         const key = reminderKey("waiting", r.id);
         if (!dismissedKeys.has(key)) {
           out.push({
@@ -166,13 +113,13 @@ export async function compute(ctx: AuthContext, opts?: { now?: Date }): Promise<
             invoiceId: r.id,
             invoiceNo: r.invoiceNo,
             partyName: r.partyName,
-            days: daysOpen(openedAt, now),
+            days: daysOpen(r.currentStepOpenedAt, now),
             dueDate: r.dueDate,
           });
         }
       }
 
-      if (prefs.dueSoonEnabled && r.dueDate && status !== "overdue" && status !== "completed") {
+      if (prefs.dueSoonEnabled && r.dueDate && r.status !== "overdue" && r.status !== "completed") {
         const until = daysUntilDue(r.dueDate, now);
         if (until >= 0 && until <= prefs.dueSoonDays) {
           const key = reminderKey("dueSoon", r.id);
