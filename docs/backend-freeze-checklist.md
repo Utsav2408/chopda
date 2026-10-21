@@ -19,11 +19,11 @@ Tick every box before tagging `backend-freeze` and starting UI phases (U1–U5).
 ## Owner-blocked (do not invent secrets)
 
 - [ ] **B9-07** Backup design + restore drill (private notes)
-- [ ] **B9-08a** Cloudflare account: R2 enabled, billing alert, provisioning token (private)
-- [ ] **B9-08b** Production bucket created/secured (`lifecycle list`, `dev-url get` evidence in STATUS)
-- [ ] **B9-08c** Bucket-scoped runtime keys in Vercel env (`R2_*`); secret scan clean
-- [ ] **B9-08e live** Contract suite green against test bucket (manual workflow with secrets)
-- [ ] **B9-08h** Production `STORAGE_PROVIDER=r2`; local refused; upload/download/delete E2E
+- [x] **B9-08a** Cloudflare account: R2 enabled, billing alert, provisioning token (private)
+- [x] **B9-08b** Production bucket created/secured (`lifecycle list`, `dev-url get` evidence in STATUS)
+- [x] **B9-08c** Bucket-scoped runtime keys in Vercel env (`R2_*`); secret scan clean
+- [x] **B9-08e live** Contract suite green against test bucket (manual workflow with secrets)
+- [x] **B9-08h** Production `STORAGE_PROVIDER=r2`; local refused; upload/download/delete E2E
 - [ ] **B9-08i** Backup to second provider/account (ties to B9-07)
 - [ ] **B9-09** Private runbook signed off
 - [ ] **B9-10** Repo mirror/bundle backup + full history re-scan clean
