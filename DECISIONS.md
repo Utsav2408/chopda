@@ -74,10 +74,16 @@ more users, or external compliance shows up.
 | `B9-10` / Wave E mirror      | Repo mirror / `git bundle` + full history re-scan | GitHub + gitleaks CI is enough for solo; D3 mirror remains nice-to-have                     | Before open-sourcing, or if GitHub access is a single point of failure you care about      |
 | `B9-03` live 5k              | Fill real p95 numbers in `docs/perf-notes.md`     | Harness exists; synthetic 5k load is not needed at current scale                            | Lists feel slow, or before inviting a larger team                                          |
 | `B9-11` `backend-freeze` tag | Owner tag after every freeze box                  | UI (U1–U5) already shipped against the merged backend; freeze tag adds no product value     | Optional; skip unless you want a historical marker                                         |
+| `P0-07` dual key locations   | Confirm `ENCRYPTION_KEY` in two private places    | Rotation script exists (`pnpm crypto:rotate`); locations stay private notes                 | Before real bank/PAN data you cannot afford to lose                                        |
+| `P5-14` clean production data | Wipe/replace seed before real invoices           | In-house v1 still on synthetic/seed data                                                    | Before loading real customer invoices                                                      |
 
 **Still in force:** auth + role checks on the server, R2 private storage
 (`P5-15`), no secrets in the repo, Phase 6 stays gated, encryption-key
 locations stay in private notes only.
+
+**Release 1 status (21 Oct 2026):** Phases 0–5 product work is complete or
+explicitly deferred above. Classic `P*` rows in `STATUS.md` were reconciled
+against `B0`–`B9` + `U1`–`U5`.
 
 ## Encryption key storage (`P0-07`) — reminder only, details stay private
 
@@ -87,8 +93,8 @@ locations stay in private notes only.
 - **Where** those two locations are, and the exact rotation runbook, are kept in
   the owner's **local private notes** (see below) — not in this file, not in any
   committed doc, and not pasted into any agent chat or prompt.
-- This row stays `todo` in `STATUS.md` until the owner has actually done it and
-  confirmed the two locations exist (naming them only in the private notes).
+- **In-house v1:** this is deferred in `STATUS.md` (not a Release 1 blocker);
+  still do it before irreversible real encrypted data.
 
 ## Go-live runbook (`P5-13`) — reminder only
 
