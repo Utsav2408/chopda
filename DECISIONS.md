@@ -54,10 +54,30 @@ notes, kept outside this repository (see the note at the end of this file).
   Waiting = current step open longer than this threshold.
 - **Release 1 step field types** (resolved 14 Oct 2026): `file`, `text`,
   `confirm`, and optional `date` / `number` (per B4-01).
-- Backups: none for now (per the database doc); gated before real data goes in
-  — see `P5-09` / `B9-07` in `STATUS.md`.
+- Backups: **deferred for in-house v1** (resolved 21 Oct 2026) — see
+  "In-house scope" below. Accept Neon + R2 provider durability; no second
+  backup provider or formal restore drill until the owner opts in.
 - Bank IFSC validation: format check only (4 letters, `0`, 6 letters or digits).
   No online IFSC lookup API.
+
+## In-house scope (resolved 21 Oct 2026)
+
+Chopda is a **small private in-house app** for a solo owner. Heavy ops gates
+that matter for a multi-tenant or regulated product are **explicitly deferred**
+so Release 1 can stay usable without ceremony. Revisit if real customer data,
+more users, or external compliance shows up.
+
+| Deferred                     | Was                                               | Why deferred now                                                                            | Revisit when                                                                               |
+| ---------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `P5-09` / `B9-07` / `B9-08i` | Second backup provider + restore drill            | Neon + Cloudflare R2 already hold DB/files; dual-provider backup is overkill for low volume | Data loss would hurt beyond "rebuild from invoices," or a second person depends on the app |
+| `P5-13` / `B9-09`            | Formal private go-live runbook sign-off           | Owner operates the stack day-to-day; a long runbook can wait                                | Onboarding anyone else, or after a real incident                                           |
+| `B9-10` / Wave E mirror      | Repo mirror / `git bundle` + full history re-scan | GitHub + gitleaks CI is enough for solo; D3 mirror remains nice-to-have                     | Before open-sourcing, or if GitHub access is a single point of failure you care about      |
+| `B9-03` live 5k              | Fill real p95 numbers in `docs/perf-notes.md`     | Harness exists; synthetic 5k load is not needed at current scale                            | Lists feel slow, or before inviting a larger team                                          |
+| `B9-11` `backend-freeze` tag | Owner tag after every freeze box                  | UI (U1–U5) already shipped against the merged backend; freeze tag adds no product value     | Optional; skip unless you want a historical marker                                         |
+
+**Still in force:** auth + role checks on the server, R2 private storage
+(`P5-15`), no secrets in the repo, Phase 6 stays gated, encryption-key
+locations stay in private notes only.
 
 ## Encryption key storage (`P0-07`) — reminder only, details stay private
 
@@ -83,9 +103,9 @@ notes, kept outside this repository (see the note at the end of this file).
 ## Repo backup (checklist §9)
 
 - Because the owner is solo (D3), the repo has no second admin as a safety net.
-  A second copy (mirror clone or scheduled `git bundle`) is the mitigation —
-  tracked as deferred Wave E work in `STATUS.md`, to be running before Phase 5
-  go-live.
+  A second copy (mirror clone or scheduled `git bundle`) remains the long-term
+  mitigation — **deferred for in-house v1** (21 Oct 2026; see "In-house scope").
+  GitHub + CI secret scanning is the interim control.
 
 ## Database / hosting regions (`P0-03` / `B0-12`) — resolved 20 Oct 2026
 
