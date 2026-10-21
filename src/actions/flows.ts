@@ -134,11 +134,6 @@ export async function listFlows(): Promise<FlowListItemDTO[]> {
   return items.map(toListItem);
 }
 
-/** Alias for U4 / call sites that follow B4 action names. */
-export async function flowsListAction(): Promise<FlowListItemDTO[]> {
-  return listFlows();
-}
-
 /** Lightweight list for invoice filters / new-invoice form. */
 export async function flowsListSummariesAction(): Promise<FlowSummaryDTO[]> {
   const ctx = await ctxFromCookies();

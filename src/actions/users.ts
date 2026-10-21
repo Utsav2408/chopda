@@ -6,7 +6,6 @@
 
 import {
   usersListAction as listUsers,
-  usersGetAction as getUser,
   usersGetOwnProfileAction as getOwnProfile,
   usersCreateAction as createUser,
   usersDeactivateAction as deactivateUser,
@@ -17,15 +16,10 @@ import {
   usersUpdateOwnProfileAction as updateOwnProfile,
   sessionsListOwnAction as listOwnSessions,
   sessionsRevokeOwnAction as revokeOwnSession,
-  authLogoutAllAction as logoutAll,
 } from "../server/actions/users.js";
 
 export async function usersListAction() {
   return listUsers();
-}
-
-export async function usersGetAction(userId: string) {
-  return getUser(userId);
 }
 
 export async function usersGetOwnProfileAction() {
@@ -66,8 +60,4 @@ export async function sessionsListOwnAction() {
 
 export async function sessionsRevokeOwnAction(raw: unknown) {
   return revokeOwnSession(raw);
-}
-
-export async function authLogoutAllAction() {
-  return logoutAll();
 }

@@ -98,10 +98,6 @@ export async function insertInvoiceSteps(
     .returning();
 }
 
-export async function listInvoiceSteps(tx: AppTx, invoiceId: string): Promise<InvoiceStepRow[]> {
-  return tx.select().from(invoiceSteps).where(eq(invoiceSteps.invoiceId, invoiceId));
-}
-
 /** Invoice steps joined with flow step position/name for ordering. */
 export async function listInvoiceStepsWithFlow(
   tx: AppTx,

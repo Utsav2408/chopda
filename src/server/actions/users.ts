@@ -8,7 +8,6 @@ import {
   changeOwnPassword,
   create,
   deactivate,
-  get,
   getOwnProfile,
   list,
   reactivate,
@@ -25,7 +24,6 @@ import {
 } from "../users/index.js";
 import {
   listOwnSessions,
-  logoutAll,
   revokeOwnSession,
   revokeOwnSessionSchema,
   type ResolvedSession,
@@ -51,11 +49,6 @@ export async function usersCreateAction(raw: unknown): Promise<CreateUserResult>
 export async function usersListAction(): Promise<VisibleUser[]> {
   const { ctx } = await ctxFromCookies();
   return list(ctx);
-}
-
-export async function usersGetAction(userId: string): Promise<VisibleUser> {
-  const { ctx } = await ctxFromCookies();
-  return get(ctx, userId);
 }
 
 export async function usersDeactivateAction(userId: string): Promise<VisibleUser> {
@@ -118,9 +111,4 @@ export async function sessionsRevokeOwnAction(raw: unknown): Promise<void> {
   if (!parsed.success) throw new Validation("Invalid session id");
   const { ctx } = await ctxFromCookies();
   return revokeOwnSession(ctx, parsed.data.sessionId);
-}
-
-export async function authLogoutAllAction(): Promise<void> {
-  const { ctx } = await ctxFromCookies();
-  return logoutAll(ctx);
 }

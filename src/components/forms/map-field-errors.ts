@@ -22,7 +22,7 @@ export function fieldErrorsFromZod(error: Pick<ZodError, "issues">): FieldErrors
   return fieldErrorsFromZodIssues(error.issues);
 }
 
-export function fieldErrorsFromZodIssues(issues: ZodIssue[]): FieldErrors {
+function fieldErrorsFromZodIssues(issues: ZodIssue[]): FieldErrors {
   const out: FieldErrors = {};
   for (const issue of issues) {
     const key = issuePathKey(issue);
@@ -73,8 +73,4 @@ export function fieldErrorsFromServer(body: unknown, fallbackFormKey = "_form"):
   }
 
   return out;
-}
-
-export function firstFieldError(errors: FieldErrors, key: string): string | undefined {
-  return errors[key];
 }

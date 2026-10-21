@@ -112,38 +112,3 @@ export async function complete(ctx: AuthContext, input: CompleteStepInput): Prom
     return buildDetail(tx, updatedInvoice);
   });
 }
-
-/**
- * Load the flow step definition for an invoice_step (used by documents.upload).
- */
-export async function loadStepAccess(
-  ctx: AuthContext,
-  invoiceStepId: string,
-): Promise<{
-  invoice: invoiceRepo.InvoiceRow;
-  invoiceStep: invoiceRepo.InvoiceStepRow;
-  flowStep: NonNullable<Awaited<ReturnType<typeof flowRepo.getStepById>>>;
-  fields: ReturnType<typeof parseFlowFields>;
-}> {
-  const authed = assertCanMutateInvoices(ctx);
-
-  return withUser(authed, async (tx) => {
-    const invoiceStep = await invoiceRepo.getInvoiceStepById(tx, invoiceStepId);
-    if (!invoiceStep) throw new NotFound();
-
-    const invoice = await invoiceRepo.getInvoiceById(tx, invoiceStep.invoiceId);
-    if (!invoice || invoice.deletedAt) throw new NotFound();
-
-    const flowStep = await flowRepo.getStepById(tx, invoiceStep.flowStepId);
-    if (!flowStep) throw new NotFound();
-
-    requireStepRole(authed, flowStep.allowedRole);
-
-    return {
-      invoice,
-      invoiceStep,
-      flowStep,
-      fields: parseFlowFields(flowStep.fields),
-    };
-  });
-}

@@ -482,16 +482,3 @@ export async function loadInvoiceDetailPage(
     return { invoice, history, userNames };
   });
 }
-
-/** Internal: load invoice row inside an existing tx (used by steps/documents). */
-export async function getInvoiceRowOrThrow(
-  tx: AppTx,
-  ctx: RequestContext,
-  invoiceId: string,
-): Promise<repo.InvoiceRow> {
-  const invoice = await repo.getInvoiceById(tx, invoiceId);
-  if (!invoice || !canSeeInvoice(ctx, invoice)) {
-    throw new NotFound();
-  }
-  return invoice;
-}

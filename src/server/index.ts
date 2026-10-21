@@ -229,7 +229,7 @@ export {
   type ListInvoicesQuery,
 } from "./invoices/index.js";
 
-export { complete as completeStep, loadStepAccess } from "./steps/index.js";
+export { complete as completeStep } from "./steps/index.js";
 
 export {
   upload as uploadDocument,
