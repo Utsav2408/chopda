@@ -77,83 +77,83 @@ Evidence points at those tracks. Phase 6 stays gated. Deferred rows follow
 
 ## Phase 0 — Decisions and setup
 
-| ID    | Work item                                                                           | Status   | PR                                                 | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| ----- | ----------------------------------------------------------------------------------- | -------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P0-01 | Owner decisions (D1–D5) copied into `DECISIONS.md`                                  | done     | —                                                  | `DECISIONS.md` (+ in-house scope 21 Oct 2026)                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| P0-02 | Git repo + Next.js (App Router, TS), lint, format, Vitest, Playwright, CI workflow  | done     | [#2](https://github.com/Utsav2408/chopda/pull/2)   | B0-02–B0-04; CI green since PR #2                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| P0-03 | Neon project created; connection strings in Vercel + local env only                 | done     | [#13](https://github.com/Utsav2408/chopda/pull/13) | B0-12 dual Neon regions; Vercel `DATABASE_URL` + `DATABASE_URL_DIRECT` (21 Oct 2026)                                                                                                                                                                                                                                                                                                                                                                                                         |
-| P0-04 | Local file storage folder + `FILE_STORAGE_DIR`/`STORAGE_PROVIDER=local`, gitignored | done     | —                                                  | B0-13 / B6-01–03; `pnpm storage:smoke`; local in dev; production uses R2 (`P5-15`)                                                                                                                                                                                                                                                                                                                                                                                                            |
-| P0-05 | Vercel project from repo; env vars set; preview deploy loads health page            | done     | —                                                  | Wave C; B0-15; prod `/api/health?full=1` ok (21 Oct 2026)                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| P0-06 | `.env.example`, README, `STATUS.md` with every work item as `todo`                  | done     | —                                                  | `.env.example`, `README.md`, this file (rows now reconciled)                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| P0-07 | Encryption key stored in two places outside the DB; rotation steps noted            | deferred | —                                                  | **In-house scope:** code + `pnpm crypto:rotate` (B2-04/05) shipped; dual private locations remain owner private notes — not a Release 1 blocker                                                                                                                                                                                                                                                                                                                                               |
+| ID    | Work item                                                                           | Status   | PR                                                 | Evidence                                                                                                                                        |
+| ----- | ----------------------------------------------------------------------------------- | -------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| P0-01 | Owner decisions (D1–D5) copied into `DECISIONS.md`                                  | done     | —                                                  | `DECISIONS.md` (+ in-house scope 21 Oct 2026)                                                                                                   |
+| P0-02 | Git repo + Next.js (App Router, TS), lint, format, Vitest, Playwright, CI workflow  | done     | [#2](https://github.com/Utsav2408/chopda/pull/2)   | B0-02–B0-04; CI green since PR #2                                                                                                               |
+| P0-03 | Neon project created; connection strings in Vercel + local env only                 | done     | [#13](https://github.com/Utsav2408/chopda/pull/13) | B0-12 dual Neon regions; Vercel `DATABASE_URL` + `DATABASE_URL_DIRECT` (21 Oct 2026)                                                            |
+| P0-04 | Local file storage folder + `FILE_STORAGE_DIR`/`STORAGE_PROVIDER=local`, gitignored | done     | —                                                  | B0-13 / B6-01–03; `pnpm storage:smoke`; local in dev; production uses R2 (`P5-15`)                                                              |
+| P0-05 | Vercel project from repo; env vars set; preview deploy loads health page            | done     | —                                                  | Wave C; B0-15; prod `/api/health?full=1` ok (21 Oct 2026)                                                                                       |
+| P0-06 | `.env.example`, README, `STATUS.md` with every work item as `todo`                  | done     | —                                                  | `.env.example`, `README.md`, this file (rows now reconciled)                                                                                    |
+| P0-07 | Encryption key stored in two places outside the DB; rotation steps noted            | deferred | —                                                  | **In-house scope:** code + `pnpm crypto:rotate` (B2-04/05) shipped; dual private locations remain owner private notes — not a Release 1 blocker |
 
 ## Phase 1 — Foundation (sign-in, roles, base schema)
 
-| ID    | Work item                                                                     | Status | PR  | Evidence                                      |
-| ----- | ----------------------------------------------------------------------------- | ------ | --- | --------------------------------------------- |
-| P1-01 | Migration 001: extensions, `user_role` enum, `users`, `sessions`, `audit_log` | done   | —   | B1-01–B1-03                                   |
-| P1-02 | DB roles: owner role + limited `app_user`; revoke write on `audit_log`        | done   | —   | B1-04                                         |
-| P1-03 | Password module: argon2id hash/verify, min length, constant-time compare      | done   | —   | B2-01                                         |
-| P1-04 | Session module: random token, hash stored, expiry, revoke, secure cookie      | done   | —   | B2-02                                         |
-| P1-05 | Login rate limiting/lockout stored in Postgres                                | done   | —   | B2-03 + `login_attempts` (B1-02)              |
-| P1-06 | Sign-in screen `(auth)/login`                                                 | done   | —   | U2-01 + B3-01/03                              |
-| P1-07 | `middleware.ts` session + role gate per route group                           | done   | —   | B2-10 (`src/proxy.ts`, Next 16 rename)        |
-| P1-08 | Request context: `SET LOCAL app.user_id`, `withUser(tx)` helper               | done   | —   | B2-06                                         |
-| P1-09 | RLS on `users`                                                                | done   | —   | B1-12                                         |
-| P1-10 | Bootstrap script for the single Admin                                         | done   | —   | B3-04 `pnpm db:bootstrap`                     |
-| P1-11 | Admin users screen `(app)/admin/users`                                        | done   | —   | U2-03 (`/users`)                              |
-| P1-12 | Transfer Admin role server action                                             | done   | —   | B3-10 + U2-04                                 |
-| P1-13 | Audit writer                                                                  | done   | —   | B2-07                                         |
-| P1-14 | App shell navigation by role                                                  | done   | —   | U1-02                                         |
+| ID    | Work item                                                                     | Status | PR  | Evidence                               |
+| ----- | ----------------------------------------------------------------------------- | ------ | --- | -------------------------------------- |
+| P1-01 | Migration 001: extensions, `user_role` enum, `users`, `sessions`, `audit_log` | done   | —   | B1-01–B1-03                            |
+| P1-02 | DB roles: owner role + limited `app_user`; revoke write on `audit_log`        | done   | —   | B1-04                                  |
+| P1-03 | Password module: argon2id hash/verify, min length, constant-time compare      | done   | —   | B2-01                                  |
+| P1-04 | Session module: random token, hash stored, expiry, revoke, secure cookie      | done   | —   | B2-02                                  |
+| P1-05 | Login rate limiting/lockout stored in Postgres                                | done   | —   | B2-03 + `login_attempts` (B1-02)       |
+| P1-06 | Sign-in screen `(auth)/login`                                                 | done   | —   | U2-01 + B3-01/03                       |
+| P1-07 | `middleware.ts` session + role gate per route group                           | done   | —   | B2-10 (`src/proxy.ts`, Next 16 rename) |
+| P1-08 | Request context: `SET LOCAL app.user_id`, `withUser(tx)` helper               | done   | —   | B2-06                                  |
+| P1-09 | RLS on `users`                                                                | done   | —   | B1-12                                  |
+| P1-10 | Bootstrap script for the single Admin                                         | done   | —   | B3-04 `pnpm db:bootstrap`              |
+| P1-11 | Admin users screen `(app)/admin/users`                                        | done   | —   | U2-03 (`/users`)                       |
+| P1-12 | Transfer Admin role server action                                             | done   | —   | B3-10 + U2-04                          |
+| P1-13 | Audit writer                                                                  | done   | —   | B2-07                                  |
+| P1-14 | App shell navigation by role                                                  | done   | —   | U1-02                                  |
 
 ## Phase 2 — Flow engine
 
-| ID    | Work item                                                      | Status | PR  | Evidence                |
-| ----- | -------------------------------------------------------------- | ------ | --- | ----------------------- |
-| P2-01 | Migration 002: `flow_templates`, `flow_versions`, `flow_steps` | done   | —   | B1-05                   |
-| P2-02 | Zod schema for `fields` list                                   | done   | —   | B4-01                   |
-| P2-03 | Trigger blocking edits to published steps                      | done   | —   | B1-06                   |
-| P2-04 | RLS for flow tables                                            | done   | —   | B1-13                   |
-| P2-05 | Flow actions (create/edit/reorder/remove/duplicate/archive)    | done   | —   | B4-03/04/06/10          |
-| P2-06 | Publish action (version freeze)                                | done   | —   | B4-05 + U3-04           |
-| P2-07 | Flow library `(app)/flows`                                     | done   | —   | U3-01                   |
-| P2-08 | Flow builder `(app)/flows/[id]/edit`                           | done   | —   | U3-02/03/04             |
-| P2-09 | Shared step form renderer                                      | done   | —   | U1-05 `StepForm`        |
-| P2-10 | Seed script: Standard + Courier flows                          | done   | —   | B4-09 / B1-17           |
-| P2-11 | Audit rows for flow actions                                    | done   | —   | B4-11                   |
+| ID    | Work item                                                      | Status | PR  | Evidence         |
+| ----- | -------------------------------------------------------------- | ------ | --- | ---------------- |
+| P2-01 | Migration 002: `flow_templates`, `flow_versions`, `flow_steps` | done   | —   | B1-05            |
+| P2-02 | Zod schema for `fields` list                                   | done   | —   | B4-01            |
+| P2-03 | Trigger blocking edits to published steps                      | done   | —   | B1-06            |
+| P2-04 | RLS for flow tables                                            | done   | —   | B1-13            |
+| P2-05 | Flow actions (create/edit/reorder/remove/duplicate/archive)    | done   | —   | B4-03/04/06/10   |
+| P2-06 | Publish action (version freeze)                                | done   | —   | B4-05 + U3-04    |
+| P2-07 | Flow library `(app)/flows`                                     | done   | —   | U3-01            |
+| P2-08 | Flow builder `(app)/flows/[id]/edit`                           | done   | —   | U3-02/03/04      |
+| P2-09 | Shared step form renderer                                      | done   | —   | U1-05 `StepForm` |
+| P2-10 | Seed script: Standard + Courier flows                          | done   | —   | B4-09 / B1-17    |
+| P2-11 | Audit rows for flow actions                                    | done   | —   | B4-11            |
 
 ## Phase 3 — Invoices, step completion, documents
 
-| ID    | Work item                                                         | Status | PR  | Evidence                                      |
-| ----- | ----------------------------------------------------------------- | ------ | --- | --------------------------------------------- |
-| P3-01 | Migration 003: `invoices`, `invoice_steps`, `documents`           | done   | —   | B1-07–B1-09                                   |
-| P3-02 | RLS: invoices/steps/documents                                     | done   | —   | B1-14                                         |
-| P3-03 | New-invoice form                                                  | done   | —   | U4-01                                         |
-| P3-04 | Step completion server action                                     | done   | —   | B5-05 + U4-03                                 |
-| P3-05 | Storage adapter interface + local implementation + contract tests | done   | —   | B6-01–03 + B9-08d/e (R2 contract)             |
-| P3-06 | Upload action                                                     | done   | —   | B6-05/07 + U4-04                              |
-| P3-07 | Download route `api/files/[id]`                                   | done   | —   | B6-06/07                                      |
-| P3-08 | Invoice detail `(app)/invoices/[id]`                              | done   | —   | U4-03/04/05                                   |
-| P3-09 | Manual-email step behaviour                                       | done   | —   | B5-08                                         |
-| P3-10 | Basic invoices list `(app)/invoices`                              | done   | —   | U4-02 (tabs/filters supersede “basic”)        |
-| P3-11 | Audit rows for invoice actions                                    | done   | —   | B5-10                                         |
-| P3-12 | End-to-end script (Admin/Builder/Viewer)                          | done   | —   | U5-04 Playwright skeleton (`E2E_SEEDED=1`)    |
+| ID    | Work item                                                         | Status | PR  | Evidence                                   |
+| ----- | ----------------------------------------------------------------- | ------ | --- | ------------------------------------------ |
+| P3-01 | Migration 003: `invoices`, `invoice_steps`, `documents`           | done   | —   | B1-07–B1-09                                |
+| P3-02 | RLS: invoices/steps/documents                                     | done   | —   | B1-14                                      |
+| P3-03 | New-invoice form                                                  | done   | —   | U4-01                                      |
+| P3-04 | Step completion server action                                     | done   | —   | B5-05 + U4-03                              |
+| P3-05 | Storage adapter interface + local implementation + contract tests | done   | —   | B6-01–03 + B9-08d/e (R2 contract)          |
+| P3-06 | Upload action                                                     | done   | —   | B6-05/07 + U4-04                           |
+| P3-07 | Download route `api/files/[id]`                                   | done   | —   | B6-06/07                                   |
+| P3-08 | Invoice detail `(app)/invoices/[id]`                              | done   | —   | U4-03/04/05                                |
+| P3-09 | Manual-email step behaviour                                       | done   | —   | B5-08                                      |
+| P3-10 | Basic invoices list `(app)/invoices`                              | done   | —   | U4-02 (tabs/filters supersede “basic”)     |
+| P3-11 | Audit rows for invoice actions                                    | done   | —   | B5-10                                      |
+| P3-12 | End-to-end script (Admin/Builder/Viewer)                          | done   | —   | U5-04 Playwright skeleton (`E2E_SEEDED=1`) |
 
 ## Phase 4 — Overview, history, reminders, delete/undo
 
-| ID    | Work item                    | Status | PR  | Evidence                         |
-| ----- | ---------------------------- | ------ | --- | -------------------------------- |
-| P4-01 | Invoices list tabs + filters | done   | —   | B7-01 + U4-02                    |
-| P4-02 | Waiting/Overdue definitions  | done   | —   | B5-06 + DECISIONS waiting=3d     |
-| P4-03 | Dashboard `(app)/dashboard`  | done   | —   | B7-03/04 + U4-06                 |
-| P4-04 | Storage/backup health card   | done   | —   | B7-11 + U4-06                    |
-| P4-05 | Invoice history panel        | done   | —   | B7-05 + U4-05                    |
-| P4-06 | In-app reminders             | done   | —   | B7-06 + U4-07                    |
-| P4-07 | Soft delete action           | done   | —   | B7-07 + U4-07                    |
-| P4-08 | Undo action                  | done   | —   | B7-08 + U4-07                    |
-| P4-09 | Purge job (Vercel Cron)      | done   | —   | B7-09/10                         |
-| P4-10 | Empty/loading/error states   | done   | —   | U1-03 Empty/Loading/ErrorState   |
-| P4-11 | Mobile layouts               | done   | —   | U1-06 + U5-03 phone-width e2e    |
+| ID    | Work item                    | Status | PR  | Evidence                       |
+| ----- | ---------------------------- | ------ | --- | ------------------------------ |
+| P4-01 | Invoices list tabs + filters | done   | —   | B7-01 + U4-02                  |
+| P4-02 | Waiting/Overdue definitions  | done   | —   | B5-06 + DECISIONS waiting=3d   |
+| P4-03 | Dashboard `(app)/dashboard`  | done   | —   | B7-03/04 + U4-06               |
+| P4-04 | Storage/backup health card   | done   | —   | B7-11 + U4-06                  |
+| P4-05 | Invoice history panel        | done   | —   | B7-05 + U4-05                  |
+| P4-06 | In-app reminders             | done   | —   | B7-06 + U4-07                  |
+| P4-07 | Soft delete action           | done   | —   | B7-07 + U4-07                  |
+| P4-08 | Undo action                  | done   | —   | B7-08 + U4-07                  |
+| P4-09 | Purge job (Vercel Cron)      | done   | —   | B7-09/10                       |
+| P4-10 | Empty/loading/error states   | done   | —   | U1-03 Empty/Loading/ErrorState |
+| P4-11 | Mobile layouts               | done   | —   | U1-06 + U5-03 phone-width e2e  |
 
 ## Phase 5 — Profiles, hardening, go-live gates
 
