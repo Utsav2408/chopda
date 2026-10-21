@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition, type FormEvent } from "react";
+import { useAppNavigate } from "@/lib/navigate";
 import {
   usersCreateAction,
   usersDeactivateAction,
@@ -28,14 +28,14 @@ type DialogKind =
   | { type: "transfer" }
   | null;
 
-function roleTone(role: ClientUser["role"]): "neutral" | "success" | "warning" {
+function roleTone(role: ClientUser["role"]): "muted" | "info" | "warning" {
   if (role === "admin") return "warning";
-  if (role === "builder") return "success";
-  return "neutral";
+  if (role === "builder") return "info";
+  return "muted";
 }
 
 export function UsersAdmin({ initialUsers, currentUserId }: UsersAdminProps) {
-  const router = useRouter();
+  const navigate = useAppNavigate();
   const [users, setUsers] = useState(initialUsers);
   const [dialog, setDialog] = useState<DialogKind>(null);
   const [pending, startTransition] = useTransition();
@@ -58,7 +58,7 @@ export function UsersAdmin({ initialUsers, currentUserId }: UsersAdminProps) {
 
   function refreshUsers(next: ClientUser[]) {
     setUsers(next);
-    router.refresh();
+    navigate.refresh();
   }
 
   function onAddUser(e: FormEvent<HTMLFormElement>) {
@@ -131,7 +131,7 @@ export function UsersAdmin({ initialUsers, currentUserId }: UsersAdminProps) {
           password: result.temporaryPassword,
           username: target.username,
         });
-        router.refresh();
+        navigate.refresh();
       } catch (err) {
         setFormError(err instanceof Error ? err.message : "Could not reset password.");
       }
@@ -148,8 +148,8 @@ export function UsersAdmin({ initialUsers, currentUserId }: UsersAdminProps) {
         await usersTransferAdminAction({ newAdminUserId: transferTargetId });
         closeDialog();
         // Soft navigation + refresh so the shell picks up the new role.
-        router.push("/users");
-        router.refresh();
+        navigate.push("/users");
+        navigate.refresh();
       } catch (err) {
         setFormError(err instanceof Error ? err.message : "Could not transfer Admin.");
       }
@@ -193,6 +193,7 @@ export function UsersAdmin({ initialUsers, currentUserId }: UsersAdminProps) {
         if (row.role === "admin") {
           return <span className="ui-hint">Sole Admin — use Transfer Admin</span>;
         }
+        const rowLocked = pending || dialog !== null;
         return (
           <div className="users-page__row-actions">
             {row.isActive ? (
@@ -200,6 +201,7 @@ export function UsersAdmin({ initialUsers, currentUserId }: UsersAdminProps) {
                 <button
                   type="button"
                   className="ui-btn ui-btn--ghost"
+                  disabled={rowLocked}
                   onClick={() => setDialog({ type: "reset", user: row })}
                 >
                   Temp password
@@ -207,6 +209,7 @@ export function UsersAdmin({ initialUsers, currentUserId }: UsersAdminProps) {
                 <button
                   type="button"
                   className="ui-btn ui-btn--ghost"
+                  disabled={rowLocked}
                   onClick={() => setDialog({ type: "deactivate", user: row })}
                 >
                   Deactivate
@@ -216,6 +219,7 @@ export function UsersAdmin({ initialUsers, currentUserId }: UsersAdminProps) {
               <button
                 type="button"
                 className="ui-btn ui-btn--ghost"
+                disabled={rowLocked}
                 onClick={() => setDialog({ type: "reactivate", user: row })}
               >
                 Reactivate
@@ -240,11 +244,17 @@ export function UsersAdmin({ initialUsers, currentUserId }: UsersAdminProps) {
           <button
             type="button"
             className="ui-btn ui-btn--ghost"
+            disabled={pending || dialog !== null}
             onClick={() => setDialog({ type: "transfer" })}
           >
             Transfer Admin
           </button>
-          <button type="button" className="ui-btn" onClick={() => setDialog({ type: "add" })}>
+          <button
+            type="button"
+            className="ui-btn"
+            disabled={pending || dialog !== null}
+            onClick={() => setDialog({ type: "add" })}
+          >
             Add user
           </button>
         </div>

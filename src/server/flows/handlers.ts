@@ -118,6 +118,10 @@ export function handleArchive(ctx: AuthContext, flowId: string) {
   return wrap(() => flows.archive(ctx, flowId));
 }
 
+export function handleUnarchive(ctx: AuthContext, flowId: string) {
+  return wrap(() => flows.unarchive(ctx, flowId));
+}
+
 export function handleList(ctx: AuthContext) {
   return wrap(() => flows.list(ctx));
 }

@@ -17,14 +17,25 @@ export type RequestContext = {
 /**
  * Run `fn` inside a transaction with RLS GUCs set for the acting user.
  * All repository calls that need RLS should receive the same `tx`.
+ *
+ * `SET LOCAL ROLE app_user` only runs when the pool role can assume it
+ * (local/CI). On Neon the owner often cannot `SET ROLE` to that login role;
+ * GUCs still drive RLS helpers, and the owner connection matches the
+ * migration README note (grant privileges to the pooled role instead).
  */
 export async function withUser<T>(ctx: RequestContext, fn: (tx: AppTx) => Promise<T>): Promise<T> {
   return getDb().transaction(async (tx) => {
     await tx.execute(sql`SELECT set_config('app.user_id', ${ctx.userId}, true)`);
     await tx.execute(sql`SELECT set_config('app.role', ${ctx.role}, true)`);
-    // Ensure table privileges / RLS run as the limited role even if the pool
-    // user is a member of app_user (or a superuser in local tests).
-    await tx.execute(sql`SET LOCAL ROLE app_user`);
+    const roleCheck = await tx.execute<{ can_set: boolean }>(
+      sql`SELECT pg_has_role(current_user, 'app_user', 'USAGE') AS can_set`,
+    );
+    const canSet = Boolean(
+      (roleCheck as unknown as { rows?: Array<{ can_set?: boolean }> }).rows?.[0]?.can_set,
+    );
+    if (canSet) {
+      await tx.execute(sql`SET LOCAL ROLE app_user`);
+    }
     return fn(tx);
   });
 }

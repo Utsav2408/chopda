@@ -1,10 +1,9 @@
-/* My profile + company profile (U5-01 / U5-02) */
+/* Account pages: My Profile, Company, Privacy, Preferences (U5-01 / U5-02) */
 
 .profile-page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
-  max-width: 44rem;
+  gap: var(--space-6);
   width: 100%;
 }
 
@@ -15,55 +14,29 @@
 .profile-page__intro p {
   margin: 0;
   color: var(--color-text-muted);
+  max-width: 40rem;
 }
 
-.profile-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: var(--space-2);
-}
-
-.profile-tabs__link {
-  padding: 0.45rem 0.75rem;
-  border-radius: var(--radius-md);
-  color: var(--color-text-muted);
-  text-decoration: none;
-  font-weight: 550;
-  font-size: 0.9rem;
-}
-
-.profile-tabs__link:hover {
-  background: var(--brand-50);
-  color: var(--brand-800);
-}
-
-.profile-tabs__link[aria-current="page"] {
-  background: var(--brand-50);
-  color: var(--brand-900);
-}
-
-.profile-section {
+.profile-panel {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
 }
 
-.profile-section__title {
+.profile-panel__title {
   margin: 0;
 }
 
-.profile-section__lede {
+.profile-panel__lede {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.9rem;
 }
 
 .profile-form {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  max-width: 40rem;
 }
 
 .profile-form__row {
@@ -98,9 +71,9 @@
 }
 
 .profile-alert--ok {
-  background: var(--brand-50);
-  color: var(--brand-900);
-  border: 1px solid var(--brand-200);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid var(--color-success-border);
 }
 
 .profile-dl {

@@ -3,8 +3,7 @@
  */
 "use server";
 
-import { cookies } from "next/headers";
-import { resolveSession } from "../auth/index.js";
+import { requireActionSession } from "../auth/cached-session.js";
 import {
   completeStepInputSchema,
   create,
@@ -13,11 +12,13 @@ import {
   list,
   listDeleted,
   listInvoicesQuerySchema,
+  loadInvoiceDetailPage,
   softDelete,
   undo,
   update,
   updateInvoiceInputSchema,
   type InvoiceDetail,
+  type InvoiceDetailPage,
   type InvoiceListResult,
   type DeletedInvoiceListItem,
 } from "../invoices/index.js";
@@ -25,16 +26,10 @@ import { complete } from "../steps/index.js";
 import * as dashboard from "../dashboard/index.js";
 import * as history from "../history/index.js";
 import * as reminders from "../reminders/index.js";
-import { SESSION_COOKIE_NAME } from "../security/constants.js";
-import { Unauthenticated, Validation } from "../kernel/errors.js";
+import { Validation } from "../kernel/errors.js";
 
 async function ctxFromCookies() {
-  const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE_NAME)?.value;
-  const resolved = await resolveSession(token);
-  if (!resolved) {
-    throw new Unauthenticated();
-  }
+  const resolved = await requireActionSession();
   return resolved.ctx;
 }
 
@@ -58,6 +53,12 @@ export async function invoicesUpdateAction(
 export async function invoicesGetAction(invoiceId: string): Promise<InvoiceDetail> {
   const ctx = await ctxFromCookies();
   return get(ctx, invoiceId);
+}
+
+/** Invoice detail + history + display names in one transaction. */
+export async function invoicesDetailPageAction(invoiceId: string): Promise<InvoiceDetailPage> {
+  const ctx = await ctxFromCookies();
+  return loadInvoiceDetailPage(ctx, invoiceId);
 }
 
 export async function invoicesListAction(raw: unknown): Promise<InvoiceListResult> {
@@ -109,6 +110,12 @@ export async function dashboardNeedsAttentionAction() {
 export async function dashboardRecentActivityAction() {
   const ctx = await ctxFromCookies();
   return dashboard.recentActivity(ctx);
+}
+
+/** Single-txn dashboard bundle (counts + byStep + attention + activity + names). */
+export async function dashboardLoadAction() {
+  const ctx = await ctxFromCookies();
+  return dashboard.loadDashboard(ctx);
 }
 
 export async function invoiceHistoryAction(invoiceId: string) {

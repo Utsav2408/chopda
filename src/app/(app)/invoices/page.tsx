@@ -1,5 +1,5 @@
 import { requireCurrentUser } from "@/actions/auth";
-import { flowsListAction } from "@/actions/flows";
+import { flowsListSummariesAction } from "@/actions/flows";
 import { invoicesListAction } from "@/actions/invoices";
 import { usersListAction } from "@/actions/users";
 import { InvoiceList } from "@/components/invoices/InvoiceList";
@@ -40,7 +40,7 @@ export default async function InvoicesPage({
   };
 
   let list: Awaited<ReturnType<typeof invoicesListAction>> | null = null;
-  let flows: Awaited<ReturnType<typeof flowsListAction>> = [];
+  let flows: Awaited<ReturnType<typeof flowsListSummariesAction>> = [];
   let users: Awaited<ReturnType<typeof usersListAction>> = [];
   let loadError: string | null = null;
 
@@ -57,7 +57,7 @@ export default async function InvoicesPage({
         cursor: filters.cursor,
         limit: 50,
       }),
-      flowsListAction(),
+      flowsListSummariesAction(),
       usersListAction(),
     ]);
   } catch (err) {
@@ -78,7 +78,9 @@ export default async function InvoicesPage({
       filters={filters}
       options={{
         flows: flows.map((f) => ({ id: f.id, name: f.name })),
-        users: users.map((u) => ({ id: u.id, displayName: u.displayName })),
+        users: users
+          .filter((u) => u.isActive && (u.role === "admin" || u.role === "builder"))
+          .map((u) => ({ id: u.id, displayName: u.displayName })),
       }}
       canCreate={user.role === "admin" || user.role === "builder"}
       isAdmin={user.role === "admin"}

@@ -9,6 +9,7 @@ import {
   invoicesCreateAction as createInvoice,
   invoicesUpdateAction as updateInvoice,
   invoicesGetAction as getInvoice,
+  invoicesDetailPageAction as getInvoiceDetailPage,
   invoicesListAction as listInvoices,
   invoicesSoftDeleteAction as softDeleteInvoice,
   invoicesUndoAction as undoInvoice,
@@ -18,6 +19,7 @@ import {
   dashboardByStepAction as dashByStep,
   dashboardNeedsAttentionAction as dashNeedsAttention,
   dashboardRecentActivityAction as dashRecent,
+  dashboardLoadAction as dashLoad,
   invoiceHistoryAction as invoiceHistory,
   remindersComputeAction as computeReminders,
   remindersDismissAction as dismissReminder,
@@ -33,6 +35,10 @@ export async function invoicesUpdateAction(id: string, raw: unknown) {
 
 export async function invoicesGetAction(id: string) {
   return getInvoice(id);
+}
+
+export async function invoicesDetailPageAction(id: string) {
+  return getInvoiceDetailPage(id);
 }
 
 export async function invoicesListAction(raw: unknown = {}) {
@@ -69,6 +75,10 @@ export async function dashboardNeedsAttentionAction() {
 
 export async function dashboardRecentActivityAction() {
   return dashRecent();
+}
+
+export async function dashboardLoadAction() {
+  return dashLoad();
 }
 
 export async function invoiceHistoryAction(invoiceId: string) {

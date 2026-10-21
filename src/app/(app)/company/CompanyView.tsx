@@ -17,7 +17,6 @@ import type {
 } from "@/lib/company-dto";
 import type { AppRole } from "@/lib/nav";
 import { FormField, fieldErrorsFromServer, type FieldErrors } from "@/components/forms";
-import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { ConfirmDialog, EmptyState, StatusChip } from "@/components/ui";
 import "../profile/profile.css";
 
@@ -55,6 +54,7 @@ export function CompanyView({
   const router = useRouter();
   const canEdit = role === "admin";
   const [pending, startTransition] = useTransition();
+  const [busyKey, setBusyKey] = useState<"profile" | "bank" | `default:${string}` | null>(null);
   const [profile, setProfile] = useState(initialProfile);
   const [banks, setBanks] = useState<ClientBankAccount[]>(initialBanks ?? []);
   const [formErrors, setFormErrors] = useState<FieldErrors | null>(null);
@@ -87,6 +87,7 @@ export function CompanyView({
       },
     };
 
+    setBusyKey("profile");
     startTransition(async () => {
       try {
         const updated = await companyUpdateAction(payload);
@@ -102,6 +103,8 @@ export function CompanyView({
       } catch (err) {
         const message = actionErrorMessage(err, "Could not save company profile.");
         setFormErrors(fieldErrorsFromServer({ error: message }));
+      } finally {
+        setBusyKey(null);
       }
     });
   }
@@ -121,6 +124,7 @@ export function CompanyView({
       ...(dialog.type === "add" ? { isDefault: data.get("isDefault") === "on" } : {}),
     };
 
+    setBusyKey("bank");
     startTransition(async () => {
       try {
         if (dialog.type === "add") {
@@ -154,6 +158,8 @@ export function CompanyView({
       } catch (err) {
         const message = actionErrorMessage(err, "Could not save bank account.");
         setDialogErrors(fieldErrorsFromServer({ error: message }));
+      } finally {
+        setBusyKey(null);
       }
     });
   }
@@ -161,6 +167,7 @@ export function CompanyView({
   function onDeactivateBank() {
     if (!dialog || dialog.type !== "deactivate") return;
     const id = dialog.bank.id;
+    setBusyKey("bank");
     startTransition(async () => {
       try {
         const updated = await companyDeactivateBankAction(id);
@@ -172,11 +179,14 @@ export function CompanyView({
       } catch (err) {
         setBankError(actionErrorMessage(err, "Could not deactivate bank account."));
         setDialog(null);
+      } finally {
+        setBusyKey(null);
       }
     });
   }
 
   function onSetDefault(id: string) {
+    setBusyKey(`default:${id}`);
     startTransition(async () => {
       try {
         const updated = await companySetDefaultBankAction(id);
@@ -190,6 +200,8 @@ export function CompanyView({
         router.refresh();
       } catch (err) {
         setBankError(actionErrorMessage(err, "Could not set default bank."));
+      } finally {
+        setBusyKey(null);
       }
     });
   }
@@ -198,10 +210,8 @@ export function CompanyView({
 
   return (
     <div className="profile-page">
-      <ProfileTabs active="company" />
-
       <div className="profile-page__intro">
-        <h2>Company profile</h2>
+        <h2>Company</h2>
         <p>
           {canEdit
             ? "Legal details and bank accounts for invoices. Only Admins can edit."
@@ -209,8 +219,8 @@ export function CompanyView({
         </p>
       </div>
 
-      <section className="profile-section" aria-labelledby="company-summary-heading">
-        <h3 id="company-summary-heading" className="profile-section__title">
+      <section className="profile-panel" aria-labelledby="company-summary-heading">
+        <h3 id="company-summary-heading" className="profile-panel__title">
           Workspace
         </h3>
         <dl className="profile-dl">
@@ -226,8 +236,8 @@ export function CompanyView({
         </dl>
       </section>
 
-      <section className="profile-section" aria-labelledby="company-details-heading">
-        <h3 id="company-details-heading" className="profile-section__title">
+      <section className="profile-panel" aria-labelledby="company-details-heading">
+        <h3 id="company-details-heading" className="profile-panel__title">
           Legal details
         </h3>
         {canEdit ? (
@@ -302,7 +312,7 @@ export function CompanyView({
 
             <div className="profile-form__actions">
               <button type="submit" className="ui-btn" disabled={pending}>
-                {pending ? "Saving…" : "Save company profile"}
+                {busyKey === "profile" ? "Saving…" : "Save company profile"}
               </button>
             </div>
           </form>
@@ -318,8 +328,8 @@ export function CompanyView({
         )}
       </section>
 
-      <section className="profile-section" aria-labelledby="company-banks-heading">
-        <h3 id="company-banks-heading" className="profile-section__title">
+      <section className="profile-panel" aria-labelledby="company-banks-heading">
+        <h3 id="company-banks-heading" className="profile-panel__title">
           Bank accounts
         </h3>
         {banksDenied ? (
@@ -328,7 +338,7 @@ export function CompanyView({
           </p>
         ) : (
           <>
-            <p className="profile-section__lede">
+            <p className="profile-panel__lede">
               {canEdit
                 ? "Add, edit, deactivate, and set a default account for invoices."
                 : "Read-only. Account numbers are shown in full for Builders."}
@@ -380,7 +390,7 @@ export function CompanyView({
                               disabled={pending}
                               onClick={() => onSetDefault(bank.id)}
                             >
-                              Set default
+                              {busyKey === `default:${bank.id}` ? "Setting…" : "Set default"}
                             </button>
                           ) : null}
                           <button

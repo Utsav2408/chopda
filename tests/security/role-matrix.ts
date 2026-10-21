@@ -311,7 +311,7 @@ export const ROLE_MATRIX: MatrixRow[] = [
   // --- B4 flows ---
   {
     id: "flows-mutate",
-    operation: "flows.create/edit/publish/archive",
+    operation: "flows.create/edit/publish/archive/unarchive",
     expectations: {
       "signed-out": "deny",
       viewer: "deny",

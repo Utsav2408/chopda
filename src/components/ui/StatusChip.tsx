@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import "./ui.css";
 
-export type StatusTone = "neutral" | "success" | "warning" | "danger";
+export type StatusTone = "neutral" | "muted" | "info" | "success" | "warning" | "danger";
 
 export type StatusChipProps = {
   children: ReactNode;

@@ -4,7 +4,6 @@
  */
 "use server";
 
-import { cookies } from "next/headers";
 import {
   changeOwnPassword,
   create,
@@ -28,21 +27,17 @@ import {
   listOwnSessions,
   logoutAll,
   revokeOwnSession,
-  resolveSession,
   revokeOwnSessionSchema,
+  type ResolvedSession,
 } from "../auth/index.js";
-import { SESSION_COOKIE_NAME } from "../security/constants.js";
-import { Unauthenticated, Validation } from "../kernel/errors.js";
+import { requireActionSession } from "../auth/cached-session.js";
+import { Validation } from "../kernel/errors.js";
+
 async function ctxFromCookies(): Promise<{
-  ctx: NonNullable<Awaited<ReturnType<typeof resolveSession>>>["ctx"];
+  ctx: ResolvedSession["ctx"];
   sessionId: string;
 }> {
-  const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE_NAME)?.value;
-  const resolved = await resolveSession(token);
-  if (!resolved) {
-    throw new Unauthenticated();
-  }
+  const resolved = await requireActionSession();
   return { ctx: resolved.ctx, sessionId: resolved.session.id };
 }
 

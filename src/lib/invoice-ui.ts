@@ -111,12 +111,14 @@ export function statusTone(status: InvoiceStatus): StatusTone {
     case "completed":
       return "success";
     case "waiting":
-      return "warning";
+      return "info";
     case "overdue":
-    case "cancelled":
       return "danger";
+    case "cancelled":
+    case "open":
+      return "muted";
     default:
-      return "neutral";
+      return "muted";
   }
 }
 

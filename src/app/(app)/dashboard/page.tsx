@@ -1,12 +1,6 @@
 import { requireCurrentUser } from "@/actions/auth";
 import { healthFullCheckAction } from "@/actions/health";
-import {
-  dashboardByStepAction,
-  dashboardCountsAction,
-  dashboardNeedsAttentionAction,
-  dashboardRecentActivityAction,
-} from "@/actions/invoices";
-import { usersListAction } from "@/actions/users";
+import { dashboardLoadAction } from "@/actions/invoices";
 import {
   DashboardView,
   type DashboardByStepUi,
@@ -24,17 +18,13 @@ export default async function DashboardPage() {
   let byStep: DashboardByStepUi[] = [];
   let needsAttention: NeedsAttentionUi[] = [];
   let recentActivity: RecentActivityUi[] = [];
-  let users: Awaited<ReturnType<typeof usersListAction>> = [];
+  let ownerNames: Record<string, string> = {};
   let health: HealthUi | null = null;
   let loadError: string | null = null;
 
   try {
-    const [c, b, n, r, u, h] = await Promise.all([
-      dashboardCountsAction(),
-      dashboardByStepAction(),
-      dashboardNeedsAttentionAction(),
-      dashboardRecentActivityAction(),
-      usersListAction(),
+    const [bundle, h] = await Promise.all([
+      dashboardLoadAction(),
       healthFullCheckAction().catch((): HealthUi => ({
         status: "error",
         database: { ok: false, error: "unreachable" },
@@ -44,11 +34,11 @@ export default async function DashboardPage() {
         backupStatus: "none",
       })),
     ]);
-    counts = c as DashboardCountsUi;
-    byStep = b as DashboardByStepUi[];
-    needsAttention = n as NeedsAttentionUi[];
-    recentActivity = r as RecentActivityUi[];
-    users = u;
+    counts = bundle.counts as DashboardCountsUi;
+    byStep = bundle.byStep as DashboardByStepUi[];
+    needsAttention = bundle.needsAttention as NeedsAttentionUi[];
+    recentActivity = bundle.recentActivity as RecentActivityUi[];
+    ownerNames = bundle.ownerNames;
     health = h as HealthUi;
   } catch (err) {
     loadError = err instanceof Error ? err.message : "Request failed";
@@ -57,8 +47,6 @@ export default async function DashboardPage() {
   if (loadError || !counts) {
     return <ErrorState title="Could not load dashboard" message={loadError ?? "Request failed"} />;
   }
-
-  const ownerNames = Object.fromEntries(users.map((u) => [u.id, u.displayName]));
 
   return (
     <DashboardView

@@ -260,3 +260,63 @@ export async function countActiveInvoicesForTemplate(
     );
   return Number(row?.n ?? 0);
 }
+
+/** All versions for the given templates (batch). */
+export async function listVersionsForTemplates(
+  tx: AppTx,
+  templateIds: string[],
+): Promise<FlowVersionRow[]> {
+  if (templateIds.length === 0) return [];
+  return tx
+    .select()
+    .from(flowVersions)
+    .where(inArray(flowVersions.templateId, templateIds))
+    .orderBy(asc(flowVersions.versionNo));
+}
+
+/** Steps for many versions in one query. */
+export async function listStepsForVersions(
+  tx: AppTx,
+  versionIds: string[],
+): Promise<FlowStepRow[]> {
+  if (versionIds.length === 0) return [];
+  return tx
+    .select()
+    .from(flowSteps)
+    .where(inArray(flowSteps.versionId, versionIds))
+    .orderBy(asc(flowSteps.position));
+}
+
+/**
+ * Active invoice counts keyed by flow template id (one grouped query).
+ */
+export async function countActiveInvoicesByTemplate(
+  tx: AppTx,
+  templateIds: string[],
+): Promise<Map<string, number>> {
+  const result = new Map<string, number>();
+  for (const id of templateIds) result.set(id, 0);
+  if (templateIds.length === 0) return result;
+
+  const rows = await tx
+    .select({
+      templateId: flowVersions.templateId,
+      n: count(),
+    })
+    .from(invoices)
+    .innerJoin(flowVersions, eq(invoices.flowVersionId, flowVersions.id))
+    .where(
+      and(
+        inArray(flowVersions.templateId, templateIds),
+        isNull(invoices.deletedAt),
+        ne(invoices.status, "completed"),
+        ne(invoices.status, "cancelled"),
+      ),
+    )
+    .groupBy(flowVersions.templateId);
+
+  for (const row of rows) {
+    result.set(row.templateId, Number(row.n));
+  }
+  return result;
+}

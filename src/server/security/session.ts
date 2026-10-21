@@ -3,8 +3,8 @@
  * expiry, revoke helpers, cookie flags.
  *
  * Constants (also in constants.ts for Edge-safe import):
- * - SESSION_ABSOLUTE_TTL_MS = 30 days from createdAt
- * - SESSION_IDLE_TTL_MS = 7 days from lastSeenAt
+ * - SESSION_ABSOLUTE_TTL_MS = 24 hours from createdAt
+ * - SESSION_IDLE_TTL_MS = 24 hours from lastSeenAt
  */
 import { createHash, randomBytes } from "node:crypto";
 import { and, eq, isNull } from "drizzle-orm";

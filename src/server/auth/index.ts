@@ -25,4 +25,9 @@ export {
   clientUserAgent,
   type AuthedRequest,
 } from "./request-context.js";
+export {
+  resolveSessionFromCookies,
+  requireSessionFromCookies,
+  requireActionSession,
+} from "./cached-session.js";
 export type { SessionListRow } from "./repo.js";

@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 import { FormField, fieldErrorsFromServer, type FieldErrors } from "@/components/forms";
+import { useAppNavigate } from "@/lib/navigate";
 
 type LoginFormProps = {
   nextPath: string;
@@ -15,7 +15,7 @@ function safeNextPath(raw: string): string {
 }
 
 export function LoginForm({ nextPath }: LoginFormProps) {
-  const router = useRouter();
+  const navigate = useAppNavigate();
   const [pending, startTransition] = useTransition();
   const [errors, setErrors] = useState<FieldErrors | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -51,8 +51,8 @@ export function LoginForm({ nextPath }: LoginFormProps) {
         }
 
         const dest = body?.user?.mustChangePassword ? "/change-password" : safeNextPath(nextPath);
-        router.replace(dest);
-        router.refresh();
+        navigate.replace(dest);
+        navigate.refresh();
       } catch {
         setFormError("Could not sign in. Try again.");
       }
@@ -99,7 +99,8 @@ export function LoginForm({ nextPath }: LoginFormProps) {
       </div>
 
       <p className="auth-form__note">
-        Forgot your password? Ask your Admin to issue a temporary password reset.
+        No self-registration — accounts are issued by an Admin. Forgot your password? Ask your Admin
+        to issue a temporary password reset.
       </p>
     </form>
   );

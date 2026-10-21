@@ -34,8 +34,8 @@ type DraftSettings = {
 
 function statusTone(status: FlowDetailDTO["status"]): StatusTone {
   if (status === "published") return "success";
-  if (status === "draft") return "warning";
-  return "neutral";
+  if (status === "draft") return "info";
+  return "muted";
 }
 
 function settingsFromStep(step: FlowStepDTO): DraftSettings {
@@ -68,6 +68,9 @@ export function FlowBuilder({ initialFlow, canEdit }: FlowBuilderProps) {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [busyKey, setBusyKey] = useState<"add" | "save" | "publish" | "remove" | "reorder" | null>(
+    null,
+  );
   const [publishOpen, setPublishOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
 
@@ -118,6 +121,7 @@ export function FlowBuilder({ initialFlow, canEdit }: FlowBuilderProps) {
     ordered[index] = ordered[target]!;
     ordered[target] = tmp;
 
+    setBusyKey("reorder");
     startTransition(async () => {
       try {
         const next = await reorderFlowSteps(flow.id, ordered);
@@ -126,11 +130,14 @@ export function FlowBuilder({ initialFlow, canEdit }: FlowBuilderProps) {
         setError(null);
       } catch (err) {
         setError(actionErrorMessage(err, "Could not reorder steps"));
+      } finally {
+        setBusyKey(null);
       }
     });
   }
 
   function onAddStep() {
+    setBusyKey("add");
     startTransition(async () => {
       try {
         const next = await addFlowStep(flow.id, {
@@ -145,6 +152,8 @@ export function FlowBuilder({ initialFlow, canEdit }: FlowBuilderProps) {
         setError(null);
       } catch (err) {
         setError(actionErrorMessage(err, "Could not add step"));
+      } finally {
+        setBusyKey(null);
       }
     });
   }
@@ -156,6 +165,7 @@ export function FlowBuilder({ initialFlow, canEdit }: FlowBuilderProps) {
       setError("Step name is required.");
       return;
     }
+    setBusyKey("save");
     startTransition(async () => {
       try {
         const next = await editFlowStep(flow.id, selectedStep.id, {
@@ -169,12 +179,15 @@ export function FlowBuilder({ initialFlow, canEdit }: FlowBuilderProps) {
         setError(null);
       } catch (err) {
         setError(actionErrorMessage(err, "Could not save step"));
+      } finally {
+        setBusyKey(null);
       }
     });
   }
 
   function onRemoveStep() {
     if (!selectedStep) return;
+    setBusyKey("remove");
     startTransition(async () => {
       try {
         const next = await removeFlowStep(flow.id, selectedStep.id);
@@ -184,11 +197,14 @@ export function FlowBuilder({ initialFlow, canEdit }: FlowBuilderProps) {
         setError(null);
       } catch (err) {
         setError(actionErrorMessage(err, "Could not remove step"));
+      } finally {
+        setBusyKey(null);
       }
     });
   }
 
   function onPublish() {
+    setBusyKey("publish");
     startTransition(async () => {
       try {
         const next = await publishFlow(flow.id);
@@ -202,6 +218,8 @@ export function FlowBuilder({ initialFlow, canEdit }: FlowBuilderProps) {
         setError(null);
       } catch (err) {
         setError(actionErrorMessage(err, "Could not publish flow"));
+      } finally {
+        setBusyKey(null);
       }
     });
   }
@@ -236,7 +254,7 @@ export function FlowBuilder({ initialFlow, canEdit }: FlowBuilderProps) {
               disabled={pending || flow.steps.length === 0}
               onClick={() => setPublishOpen(true)}
             >
-              Publish
+              {busyKey === "publish" ? "Publishing…" : "Publish"}
             </button>
           ) : null}
         </div>
@@ -308,7 +326,7 @@ export function FlowBuilder({ initialFlow, canEdit }: FlowBuilderProps) {
                 disabled={pending}
                 onClick={onAddStep}
               >
-                Add step
+                {busyKey === "add" ? "Adding…" : "Add step"}
               </button>
             </div>
           ) : null}
@@ -379,7 +397,7 @@ export function FlowBuilder({ initialFlow, canEdit }: FlowBuilderProps) {
                     disabled={pending || !dirty}
                     onClick={onSaveStep}
                   >
-                    Save step
+                    {busyKey === "save" ? "Saving…" : "Save step"}
                   </button>
                   <button
                     type="button"

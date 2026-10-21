@@ -1,6 +1,6 @@
 /**
  * GET /api/auth/session-gone — clear a stale session cookie and send the user
- * to /login. Used when middleware saw a cookie but resolveSession failed (U2-01).
+ * to /login. Used when proxy saw a cookie but resolveSession failed (U2-01).
  */
 import { NextResponse } from "next/server";
 import { clearSessionCookie } from "@/server/auth";

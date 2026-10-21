@@ -3,6 +3,7 @@
 import { useId, useState, type ChangeEvent, type FormEvent } from "react";
 import { FormField } from "@/components/forms/FormField";
 import type { FieldErrors } from "@/components/forms/map-field-errors";
+import { UploadProgress } from "@/components/ui";
 import type { StepField, StepFieldValues } from "@/lib/flow-fields";
 
 export type StepFormProps = {
@@ -263,7 +264,7 @@ export function StepForm({
                     }}
                   />
                   {uploadingKey === field.key ? (
-                    <p className="ui-hint">Uploading…</p>
+                    <UploadProgress />
                   ) : typeof values[field.key] === "string" && values[field.key] ? (
                     <p className="ui-hint">
                       {onUploadFile

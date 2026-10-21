@@ -4,26 +4,26 @@
  */
 "use server";
 
-import { cookies } from "next/headers";
-import { resolveSession } from "../server/auth/index.js";
+import { requireActionSession } from "../server/auth/cached-session.js";
 import {
   addStep,
   archive,
+  unarchive,
   createDraft,
   diffAgainst,
   duplicate,
   editStep,
   get,
   list,
+  listSummaries,
   publish,
   removeStep,
   reorderSteps,
   type FlowDetail,
   type FlowDiff,
   type FlowListItem,
+  type FlowSummary,
 } from "../server/flows/index.js";
-import { Unauthenticated } from "../server/kernel/errors.js";
-import { SESSION_COOKIE_NAME } from "../server/security/constants.js";
 import type { StepField } from "@/lib/flow-fields";
 
 export type FlowStatusDTO = "draft" | "published" | "archived";
@@ -36,6 +36,13 @@ export type FlowListItemDTO = {
   publishedVersionNo: number | null;
   steps: { stepNumber: number; name: string }[];
   activeInvoiceCount: number;
+};
+
+export type FlowSummaryDTO = {
+  id: string;
+  name: string;
+  status: FlowStatusDTO;
+  publishedVersionNo: number | null;
 };
 
 export type FlowStepDTO = {
@@ -69,12 +76,7 @@ export type FlowDiffDTO = {
 };
 
 async function ctxFromCookies() {
-  const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE_NAME)?.value;
-  const resolved = await resolveSession(token);
-  if (!resolved) {
-    throw new Unauthenticated();
-  }
+  const resolved = await requireActionSession();
   return resolved.ctx;
 }
 
@@ -135,6 +137,18 @@ export async function listFlows(): Promise<FlowListItemDTO[]> {
 /** Alias for U4 / call sites that follow B4 action names. */
 export async function flowsListAction(): Promise<FlowListItemDTO[]> {
   return listFlows();
+}
+
+/** Lightweight list for invoice filters / new-invoice form. */
+export async function flowsListSummariesAction(): Promise<FlowSummaryDTO[]> {
+  const ctx = await ctxFromCookies();
+  const items: FlowSummary[] = await listSummaries(ctx);
+  return items.map((f) => ({
+    id: f.id,
+    name: f.name,
+    status: f.status,
+    publishedVersionNo: f.publishedVersionNo,
+  }));
 }
 
 export async function getFlow(flowId: string): Promise<FlowDetailDTO> {
@@ -207,6 +221,11 @@ export async function publishFlow(flowId: string): Promise<FlowDetailDTO> {
 export async function archiveFlow(flowId: string): Promise<FlowDetailDTO> {
   const ctx = await ctxFromCookies();
   return toDetail(await archive(ctx, flowId));
+}
+
+export async function unarchiveFlow(flowId: string): Promise<FlowDetailDTO> {
+  const ctx = await ctxFromCookies();
+  return toDetail(await unarchive(ctx, flowId));
 }
 
 export async function diffFlows(flowId: string, otherFlowId: string): Promise<FlowDiffDTO> {

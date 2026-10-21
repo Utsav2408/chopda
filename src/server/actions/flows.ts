@@ -4,10 +4,10 @@
  */
 "use server";
 
-import { cookies } from "next/headers";
 import {
   addStep,
   archive,
+  unarchive,
   createDraft,
   createDraftInputSchema,
   diffAgainst,
@@ -16,24 +16,20 @@ import {
   flowStepInputSchema,
   get,
   list,
+  listSummaries,
   publish,
   removeStep,
   reorderSteps,
   type FlowDetail,
   type FlowDiff,
   type FlowListItem,
+  type FlowSummary,
 } from "../flows/index.js";
-import { resolveSession } from "../auth/index.js";
-import { SESSION_COOKIE_NAME } from "../security/constants.js";
-import { Unauthenticated, Validation } from "../kernel/errors.js";
+import { requireActionSession } from "../auth/cached-session.js";
+import { Validation } from "../kernel/errors.js";
 
 async function ctxFromCookies() {
-  const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE_NAME)?.value;
-  const resolved = await resolveSession(token);
-  if (!resolved) {
-    throw new Unauthenticated();
-  }
+  const resolved = await requireActionSession();
   return resolved.ctx;
 }
 
@@ -47,6 +43,11 @@ export async function flowsCreateDraftAction(raw: unknown): Promise<FlowDetail> 
 export async function flowsListAction(): Promise<FlowListItem[]> {
   const ctx = await ctxFromCookies();
   return list(ctx);
+}
+
+export async function flowsListSummariesAction(): Promise<FlowSummary[]> {
+  const ctx = await ctxFromCookies();
+  return listSummaries(ctx);
 }
 
 export async function flowsGetAction(flowId: string): Promise<FlowDetail> {
@@ -99,6 +100,11 @@ export async function flowsPublishAction(flowId: string): Promise<FlowDetail> {
 export async function flowsArchiveAction(flowId: string): Promise<FlowDetail> {
   const ctx = await ctxFromCookies();
   return archive(ctx, flowId);
+}
+
+export async function flowsUnarchiveAction(flowId: string): Promise<FlowDetail> {
+  const ctx = await ctxFromCookies();
+  return unarchive(ctx, flowId);
 }
 
 export async function flowsDiffAgainstAction(

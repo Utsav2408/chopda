@@ -22,6 +22,23 @@ Short checklist of what was reviewed for Phase U5. Not a full audit.
 - **Keyboard:** Focusable controls are native buttons/links/inputs; Escape
   closes shell nav and confirm dialogs (existing behavior).
 
+## Status / option color tones
+
+Semantic chips use `StatusChip` tones. Text on each tone’s background is aimed
+at WCAG AA (≥ 4.5:1). Labels always accompany color.
+
+| Tone | Meaning | Typical uses |
+|------|---------|--------------|
+| muted | resting / inactive | open, cancelled, archived, viewer |
+| info | in progress / categorical | waiting, draft, builder |
+| warning | attention / elevated | due soon, admin, degraded |
+| danger | failed / overdue | overdue, inactive user, unreachable |
+| success | done / ok | completed, published, Active, Default |
+| neutral | brand-adjacent (legacy) | soft brand chip when not a state |
+
+Tokens: `--color-{success,warning,danger,info,muted}` (+ `-bg` / `-border`)
+in `src/app/globals.css`.
+
 ## Not exhaustively tested (follow-ups)
 
 - Full keyboard-only walkthrough of flow builder drag/reorder and file upload

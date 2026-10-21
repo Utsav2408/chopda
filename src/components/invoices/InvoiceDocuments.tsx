@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type ChangeEvent } from "react";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, UploadProgress } from "@/components/ui";
+import { apiFetch } from "@/lib/api-fetch";
 import type { InvoiceDocumentUi, InvoiceStepUi } from "@/lib/invoice-ui";
 import "./invoices.css";
 
@@ -37,10 +38,9 @@ export function InvoiceDocuments({
         body.set("file", file);
         body.set("invoiceStepId", currentInvoiceStepId);
         body.set("filename", file.name);
-        const res = await fetch("/api/files/upload", {
+        const res = await apiFetch("/api/files/upload", {
           method: "POST",
           body,
-          credentials: "same-origin",
         });
         if (!res.ok) {
           const json = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -70,7 +70,7 @@ export function InvoiceDocuments({
             disabled={pending}
             onChange={onUpload}
           />
-          {pending ? <p className="ui-hint">Uploading…</p> : null}
+          {pending ? <UploadProgress /> : null}
           {error ? (
             <p className="ui-field-error" role="alert">
               {error}

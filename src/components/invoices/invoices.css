@@ -122,9 +122,46 @@
 
 .dash-count {
   border: 1px solid var(--color-border);
+  border-left-width: 3px;
   border-radius: var(--radius-md);
   background: var(--color-surface);
   padding: var(--space-4);
+}
+
+.dash-count[data-status="open"] {
+  border-left-color: var(--color-muted);
+  background: color-mix(in srgb, var(--color-muted-bg) 55%, var(--color-surface));
+}
+
+.dash-count[data-status="open"] .dash-count__value {
+  color: var(--color-muted);
+}
+
+.dash-count[data-status="waiting"] {
+  border-left-color: var(--color-info);
+  background: color-mix(in srgb, var(--color-info-bg) 55%, var(--color-surface));
+}
+
+.dash-count[data-status="waiting"] .dash-count__value {
+  color: var(--color-info);
+}
+
+.dash-count[data-status="overdue"] {
+  border-left-color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger-bg) 55%, var(--color-surface));
+}
+
+.dash-count[data-status="overdue"] .dash-count__value {
+  color: var(--color-danger);
+}
+
+.dash-count[data-status="completed"] {
+  border-left-color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success-bg) 55%, var(--color-surface));
+}
+
+.dash-count[data-status="completed"] .dash-count__value {
+  color: var(--color-success);
 }
 
 .dash-count__value {
@@ -164,19 +201,28 @@
 
 .reminders-bell__btn {
   appearance: none;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   border-radius: var(--radius-md);
-  min-height: 2.25rem;
-  min-width: 2.25rem;
-  padding: 0 0.65rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  color: var(--color-text);
   cursor: pointer;
-  font-weight: 550;
 }
 
 .reminders-bell__btn:hover {
   background: var(--brand-50);
   color: var(--brand-800);
+}
+
+.reminders-bell__icon {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .reminders-bell__badge {
@@ -194,6 +240,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.reminders-bell__badge[data-urgency="warning"] {
+  background: var(--color-warning);
+}
+
+.reminders-bell__badge[data-urgency="danger"] {
+  background: var(--color-danger);
+}
+
+.inv-reminder-kind {
+  display: inline-flex;
+  margin-top: 0.15rem;
 }
 
 .reminders-panel {

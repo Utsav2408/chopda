@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTransition, type FormEvent } from "react";
+import { useAppNavigate } from "@/lib/navigate";
 import {
   FilterBar,
   FilterField,
@@ -86,12 +86,12 @@ export function InvoiceList({
   isAdmin,
   ownerNames,
 }: InvoiceListProps) {
-  const router = useRouter();
+  const navigate = useAppNavigate();
   const [pending, startTransition] = useTransition();
 
   function go(href: string) {
     startTransition(() => {
-      router.push(href);
+      navigate.push(href);
     });
   }
 
@@ -272,7 +272,7 @@ export function InvoiceList({
                     </select>
                   </FilterField>
                   <button type="submit" className="ui-btn" disabled={pending}>
-                    Apply
+                    {pending ? "Applying…" : "Apply"}
                   </button>
                   <Link className="ui-btn ui-btn--ghost" href="/invoices">
                     Reset

@@ -25,10 +25,31 @@ function baseSession(overrides: Partial<SessionRow> = {}): SessionRow {
 }
 
 describe("session module (B2-02)", () => {
-  it("documents absolute 30d and idle 7d TTLs", () => {
-    expect(SESSION_ABSOLUTE_TTL_MS).toBe(30 * 24 * 60 * 60 * 1000);
-    expect(SESSION_IDLE_TTL_MS).toBe(7 * 24 * 60 * 60 * 1000);
+  it("documents absolute 24h and idle 24h TTLs", () => {
+    expect(SESSION_ABSOLUTE_TTL_MS).toBe(24 * 60 * 60 * 1000);
+    expect(SESSION_IDLE_TTL_MS).toBe(24 * 60 * 60 * 1000);
     expect(SESSION_COOKIE_NAME).toBe("chopda_session");
+  });
+
+  it("is invalid after +24h absolute from creation", () => {
+    const session = baseSession();
+    const justBefore = new Date(session.createdAt.getTime() + SESSION_ABSOLUTE_TTL_MS - 1000);
+    session.lastSeenAt = justBefore;
+    const justAfter = new Date(session.createdAt.getTime() + SESSION_ABSOLUTE_TTL_MS + 1000);
+    expect(isSessionValid(session, justBefore)).toBe(true);
+    expect(isSessionValid(session, justAfter)).toBe(false);
+  });
+
+  it("is invalid after +24h idle from lastSeenAt", () => {
+    const session = baseSession({
+      lastSeenAt: new Date("2026-01-01T00:00:00.000Z"),
+      // Absolute far in the future so idle is the binding constraint.
+      expiresAt: new Date("2026-12-01T00:00:00.000Z"),
+    });
+    const within = new Date(session.lastSeenAt.getTime() + SESSION_IDLE_TTL_MS - 1000);
+    const past = new Date(session.lastSeenAt.getTime() + SESSION_IDLE_TTL_MS + 1000);
+    expect(isSessionValid(session, within)).toBe(true);
+    expect(isSessionValid(session, past)).toBe(false);
   });
 
   it("generateSessionToken is high-entropy and hash is deterministic", () => {

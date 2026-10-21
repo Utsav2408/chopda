@@ -4,7 +4,7 @@
 import { desc, eq, inArray, isNull } from "drizzle-orm";
 import type { AuthContext } from "../authz/index.js";
 import type { AppTx } from "../db/client.js";
-import { auditLog, flowSteps, flowVersions, invoices, invoiceSteps } from "../db/schema.js";
+import { auditLog, flowSteps, flowVersions, invoices, invoiceSteps, users } from "../db/schema.js";
 import { withUser } from "../db/with-user.js";
 import { DASHBOARD_COUNTS_CACHE_TTL_MS } from "../invoices/constants.js";
 import { assertCanReadInvoices } from "../invoices/service.js";
@@ -47,6 +47,14 @@ export type RecentActivityItem = {
   at: Date;
 };
 
+export type DashboardBundle = {
+  counts: DashboardCounts;
+  byStep: DashboardByStepRow[];
+  needsAttention: NeedsAttentionItem[];
+  recentActivity: RecentActivityItem[];
+  ownerNames: Record<string, string>;
+};
+
 type CacheEntry = { at: number; value: DashboardCounts; userId: string };
 
 const countsCache = new Map<string, CacheEntry>();
@@ -56,17 +64,28 @@ export function clearDashboardCountsCache(): void {
   countsCache.clear();
 }
 
-type DerivedRow = {
+export type DerivedInvoiceRow = {
   id: string;
   invoiceNo: string;
   partyName: string;
   ownerId: string;
   dueDate: string | null;
   currentStepId: string | null;
+  currentStepOpenedAt: Date | null;
+  storedStatus: string;
   status: DerivedInvoiceStatus;
 };
 
-async function loadDerivedStatuses(tx: AppTx, now: Date): Promise<DerivedRow[]> {
+/**
+ * Load live invoices + steps and derive status (shared with reminders).
+ * Scoped to non-deleted invoices; step query filtered by those invoice IDs.
+ */
+export async function loadDerivedStatuses(
+  tx: AppTx,
+  now: Date,
+  opts?: { waitingDays?: number },
+): Promise<DerivedInvoiceRow[]> {
+  const waitingDays = opts?.waitingDays ?? DEFAULT_WAITING_DAYS;
   const rows = await tx
     .select({
       id: invoices.id,
@@ -119,7 +138,7 @@ async function loadDerivedStatuses(tx: AppTx, now: Date): Promise<DerivedRow[]> 
       status: r.storedStatus,
       dueDate: r.dueDate,
       currentStepOpenedAt: openedAt,
-      waitingDays: DEFAULT_WAITING_DAYS,
+      waitingDays,
       now,
     });
     return {
@@ -129,7 +148,161 @@ async function loadDerivedStatuses(tx: AppTx, now: Date): Promise<DerivedRow[]> 
       ownerId: r.ownerId,
       dueDate: r.dueDate,
       currentStepId: r.currentStepId,
+      currentStepOpenedAt: openedAt,
+      storedStatus: r.storedStatus,
       status,
+    };
+  });
+}
+
+function aggregateCounts(derived: DerivedInvoiceRow[]): DashboardCounts {
+  const out: DashboardCounts = { open: 0, waiting: 0, overdue: 0, completed: 0 };
+  for (const row of derived) {
+    if (row.status === "open") out.open += 1;
+    else if (row.status === "waiting") out.waiting += 1;
+    else if (row.status === "overdue") out.overdue += 1;
+    else if (row.status === "completed") out.completed += 1;
+  }
+  return out;
+}
+
+async function aggregateByStep(
+  tx: AppTx,
+  derived: DerivedInvoiceRow[],
+): Promise<DashboardByStepRow[]> {
+  const openish = derived.filter(
+    (d) => d.status === "open" || d.status === "waiting" || d.status === "overdue",
+  );
+  const stepIds = [
+    ...new Set(openish.map((d) => d.currentStepId).filter((id): id is string => id !== null)),
+  ];
+  if (stepIds.length === 0) return [];
+
+  const stepMeta = await tx
+    .select({
+      id: flowSteps.id,
+      name: flowSteps.name,
+      position: flowSteps.position,
+      templateId: flowVersions.templateId,
+    })
+    .from(flowSteps)
+    .innerJoin(flowVersions, eq(flowSteps.versionId, flowVersions.id))
+    .where(inArray(flowSteps.id, stepIds));
+
+  const metaById = new Map(stepMeta.map((s) => [s.id, s]));
+  const countsByStep = new Map<string, number>();
+  for (const d of openish) {
+    if (!d.currentStepId) continue;
+    countsByStep.set(d.currentStepId, (countsByStep.get(d.currentStepId) ?? 0) + 1);
+  }
+
+  return [...countsByStep.entries()]
+    .map(([flowStepId, count]) => {
+      const meta = metaById.get(flowStepId);
+      return {
+        flowStepId,
+        stepName: meta?.name ?? "Unknown",
+        stepNumber: meta ? meta.position + 1 : 0,
+        flowTemplateId: meta?.templateId ?? "",
+        count,
+      };
+    })
+    .sort((a, b) => b.count - a.count || a.stepNumber - b.stepNumber);
+}
+
+function aggregateNeedsAttention(
+  derived: DerivedInvoiceRow[],
+  limit: number,
+): NeedsAttentionItem[] {
+  return derived
+    .filter((d): d is typeof d & { status: "waiting" | "overdue" } => {
+      return d.status === "waiting" || d.status === "overdue";
+    })
+    .sort((a, b) => {
+      if (a.status !== b.status) return a.status === "overdue" ? -1 : 1;
+      return (a.dueDate ?? "").localeCompare(b.dueDate ?? "");
+    })
+    .slice(0, limit)
+    .map((d) => ({
+      id: d.id,
+      invoiceNo: d.invoiceNo,
+      partyName: d.partyName,
+      status: d.status,
+      dueDate: d.dueDate,
+      ownerId: d.ownerId,
+    }));
+}
+
+async function loadRecentActivity(tx: AppTx, limit: number): Promise<RecentActivityItem[]> {
+  const rows = await tx
+    .select({
+      id: auditLog.id,
+      action: auditLog.action,
+      entity: auditLog.entity,
+      entityId: auditLog.entityId,
+      actorId: auditLog.actorId,
+      at: auditLog.at,
+    })
+    .from(auditLog)
+    .orderBy(desc(auditLog.at))
+    .limit(limit);
+
+  return rows.map((r) => ({
+    id: r.id,
+    action: r.action,
+    entity: r.entity,
+    entityId: r.entityId,
+    actorId: r.actorId,
+    at: r.at,
+  }));
+}
+
+async function loadDisplayNames(tx: AppTx, ids: string[]): Promise<Record<string, string>> {
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (unique.length === 0) return {};
+  const rows = await tx
+    .select({ id: users.id, displayName: users.displayName })
+    .from(users)
+    .where(inArray(users.id, unique));
+  return Object.fromEntries(rows.map((r) => [r.id, r.displayName]));
+}
+
+/**
+ * Single-txn dashboard load: one derived-status scan + activity + slim name map.
+ */
+export async function loadDashboard(
+  ctx: AuthContext,
+  opts?: { now?: Date; attentionLimit?: number; activityLimit?: number },
+): Promise<DashboardBundle> {
+  const authed = assertCanReadInvoices(ctx);
+  const now = opts?.now ?? new Date();
+  const attentionLimit = opts?.attentionLimit ?? 20;
+  const activityLimit = opts?.activityLimit ?? 5;
+
+  return withUser(authed, async (tx) => {
+    const derived = await loadDerivedStatuses(tx, now);
+    const countsValue = aggregateCounts(derived);
+    countsCache.set(authed.userId, {
+      at: now.getTime(),
+      value: countsValue,
+      userId: authed.userId,
+    });
+
+    const byStepRows = await aggregateByStep(tx, derived);
+    const attention = aggregateNeedsAttention(derived, attentionLimit);
+    const activity = await loadRecentActivity(tx, activityLimit);
+    const nameIds = [
+      ...attention.map((a) => a.ownerId),
+      ...activity.map((a) => a.actorId).filter((id): id is string => id !== null),
+    ];
+    const ownerNames = await loadDisplayNames(tx, nameIds);
+
+    return {
+      counts: countsValue,
+      byStep: byStepRows,
+      needsAttention: attention,
+      recentActivity: activity,
+      ownerNames,
     };
   });
 }
@@ -155,14 +328,7 @@ export async function counts(
 
   const value = await withUser(authed, async (tx) => {
     const derived = await loadDerivedStatuses(tx, now);
-    const out: DashboardCounts = { open: 0, waiting: 0, overdue: 0, completed: 0 };
-    for (const row of derived) {
-      if (row.status === "open") out.open += 1;
-      else if (row.status === "waiting") out.waiting += 1;
-      else if (row.status === "overdue") out.overdue += 1;
-      else if (row.status === "completed") out.completed += 1;
-    }
-    return out;
+    return aggregateCounts(derived);
   });
 
   countsCache.set(cacheKey, { at: now.getTime(), value, userId: authed.userId });
@@ -181,44 +347,7 @@ export async function byStep(
 
   return withUser(authed, async (tx) => {
     const derived = await loadDerivedStatuses(tx, now);
-    const openish = derived.filter(
-      (d) => d.status === "open" || d.status === "waiting" || d.status === "overdue",
-    );
-    const stepIds = [
-      ...new Set(openish.map((d) => d.currentStepId).filter((id): id is string => id !== null)),
-    ];
-    if (stepIds.length === 0) return [];
-
-    const stepMeta = await tx
-      .select({
-        id: flowSteps.id,
-        name: flowSteps.name,
-        position: flowSteps.position,
-        templateId: flowVersions.templateId,
-      })
-      .from(flowSteps)
-      .innerJoin(flowVersions, eq(flowSteps.versionId, flowVersions.id))
-      .where(inArray(flowSteps.id, stepIds));
-
-    const metaById = new Map(stepMeta.map((s) => [s.id, s]));
-    const countsByStep = new Map<string, number>();
-    for (const d of openish) {
-      if (!d.currentStepId) continue;
-      countsByStep.set(d.currentStepId, (countsByStep.get(d.currentStepId) ?? 0) + 1);
-    }
-
-    return [...countsByStep.entries()]
-      .map(([flowStepId, count]) => {
-        const meta = metaById.get(flowStepId);
-        return {
-          flowStepId,
-          stepName: meta?.name ?? "Unknown",
-          stepNumber: meta ? meta.position + 1 : 0,
-          flowTemplateId: meta?.templateId ?? "",
-          count,
-        };
-      })
-      .sort((a, b) => b.count - a.count || a.stepNumber - b.stepNumber);
+    return aggregateByStep(tx, derived);
   });
 }
 
@@ -235,23 +364,7 @@ export async function needsAttention(
 
   return withUser(authed, async (tx) => {
     const derived = await loadDerivedStatuses(tx, now);
-    return derived
-      .filter((d): d is typeof d & { status: "waiting" | "overdue" } => {
-        return d.status === "waiting" || d.status === "overdue";
-      })
-      .sort((a, b) => {
-        if (a.status !== b.status) return a.status === "overdue" ? -1 : 1;
-        return (a.dueDate ?? "").localeCompare(b.dueDate ?? "");
-      })
-      .slice(0, limit)
-      .map((d) => ({
-        id: d.id,
-        invoiceNo: d.invoiceNo,
-        partyName: d.partyName,
-        status: d.status,
-        dueDate: d.dueDate,
-        ownerId: d.ownerId,
-      }));
+    return aggregateNeedsAttention(derived, limit);
   });
 }
 
@@ -264,29 +377,7 @@ export async function recentActivity(
   opts?: { limit?: number },
 ): Promise<RecentActivityItem[]> {
   const authed = assertCanReadInvoices(ctx);
-  const limit = opts?.limit ?? 20;
+  const limit = opts?.limit ?? 5;
 
-  return withUser(authed, async (tx) => {
-    const rows = await tx
-      .select({
-        id: auditLog.id,
-        action: auditLog.action,
-        entity: auditLog.entity,
-        entityId: auditLog.entityId,
-        actorId: auditLog.actorId,
-        at: auditLog.at,
-      })
-      .from(auditLog)
-      .orderBy(desc(auditLog.at))
-      .limit(limit);
-
-    return rows.map((r) => ({
-      id: r.id,
-      action: r.action,
-      entity: r.entity,
-      entityId: r.entityId,
-      actorId: r.actorId,
-      at: r.at,
-    }));
-  });
+  return withUser(authed, async (tx) => loadRecentActivity(tx, limit));
 }

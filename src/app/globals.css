@@ -21,12 +21,25 @@
   --color-text: #0f1c2e;
   --color-text-muted: #4a5d78;
   --color-text-inverse: #f8fbff;
-  --color-danger: #b91c1c;
-  --color-danger-bg: #fef2f2;
+
+  /* Semantic state colors (text on matching -bg meets WCAG AA ≥ 4.5:1) */
   --color-success: #047857;
   --color-success-bg: #ecfdf5;
+  --color-success-border: #a7f3d0;
   --color-warning: #b45309;
   --color-warning-bg: #fffbeb;
+  --color-warning-border: #fde68a;
+  --color-danger: #b91c1c;
+  --color-danger-bg: #fef2f2;
+  --color-danger-border: #fecaca;
+  --color-danger-hover: #991b1b;
+  --color-info: #0f766e;
+  --color-info-bg: #f0fdfa;
+  --color-info-border: #99f6e4;
+  --color-muted: #334155;
+  --color-muted-bg: #f1f5f9;
+  --color-muted-border: #cbd5e1;
+
   --color-focus: var(--brand-600);
 
   --font-sans: var(--font-dm-sans), "DM Sans", ui-sans-serif, sans-serif;
@@ -40,6 +53,7 @@
   --shadow-md: 0 8px 24px rgb(15 28 46 / 0.08);
 
   --sidebar-width: 15.5rem;
+  --sidebar-width-collapsed: 4.25rem;
   --header-height: 3.25rem;
 
   /* Breakpoints (documented; media queries use px values) */
@@ -174,7 +188,7 @@ textarea {
 }
 
 .ui-btn--danger:hover {
-  background: #991b1b;
+  background: var(--color-danger-hover);
 }
 
 .ui-input {

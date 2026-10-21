@@ -44,6 +44,9 @@ notes, kept outside this repository (see the note at the end of this file).
   create, edit, publish, and archive flows. Viewer is read-only on flows.
 - Sign-in: username + password (argon2id), own session table, long random
   tokens stored hashed. No third-party auth service.
+- **Session TTL = 24 hours** (resolved 21 Oct 2026): absolute lifetime from
+  creation and idle timeout from `last_seen_at` are both 24 hours (was 30d /
+  7d in B2-02). Opaque cookie only; user details loaded from the DB on resolve.
 - Delete: soft delete with a 30-day undo window, then a scheduled purge of the
   row and its stored file. The audit log is never purged. Only the Admin may
   delete; no accountant sign-off is needed.
@@ -84,9 +87,24 @@ notes, kept outside this repository (see the note at the end of this file).
   tracked as deferred Wave E work in `STATUS.md`, to be running before Phase 5
   go-live.
 
+## Database / hosting regions (`P0-03` / `B0-12`) — resolved 20 Oct 2026
+
+## (Vercel wiring updated 21 Oct 2026)
+
+Neon pins region **per project** (not per branch), so Chopda uses two projects:
+
+| Env                         | Neon region                             | Purpose                                     |
+| --------------------------- | --------------------------------------- | ------------------------------------------- |
+| Local (`pnpm dev`)          | AWS Asia Pacific (Singapore)            | Low latency for the owner in India          |
+| Vercel Preview + Production | AWS US East (Ohio), `production` branch | Same DB as go-live; close to Vercel US East |
+
+Same migrations are applied to both projects. Local `.env` and Neon CLI context
+target the Singapore project; Vercel `DATABASE_URL` (Preview and Production)
+points at the US East production branch. Operational project identifiers stay in
+the owner’s private notes.
+
 ## Still open (blocks later phases, not Phases 0–4)
 
-- [ ] Confirm database/hosting region (`P0-03` / `B0-12`).
 - [ ] Phase 6 gates (`P6-01`): model provider, monthly cap, privacy acceptance,
       first capabilities — not asked until Release 1 is live.
 
