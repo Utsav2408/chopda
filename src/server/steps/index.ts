@@ -1,1 +1,1 @@
-export { complete, loadStepAccess } from "./service.js";
+export { complete } from "./service.js";

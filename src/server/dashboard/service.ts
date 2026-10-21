@@ -59,11 +59,6 @@ type CacheEntry = { at: number; value: DashboardCounts; userId: string };
 
 const countsCache = new Map<string, CacheEntry>();
 
-/** Test helper. */
-export function clearDashboardCountsCache(): void {
-  countsCache.clear();
-}
-
 export type DerivedInvoiceRow = {
   id: string;
   invoiceNo: string;

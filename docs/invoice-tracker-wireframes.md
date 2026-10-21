@@ -1,6 +1,6 @@
 # Invoice Tracker: Wireframes
 
-Draft dated 2026-10-11. Companion to `invoice-tracker-idea-problem-research-solution.md`, `invoice-tracker-database-and-security-architecture.md`, `invoice-tracker-phasewise-implementation-plan.md` and `invoice-tracker-agentic-ui.md`.
+Draft dated 2026-10-11. Companion to `invoice-tracker-database-and-security-architecture.md`, `invoice-tracker-phasewise-implementation-plan.md` and `invoice-tracker-agentic-ui.md`.
 
 Wireframe canvas (private to the owner until shared from the page's Share menu): https://claude.ai/artifact/SxdY9pWp1u4AahCD7sfEcf
 

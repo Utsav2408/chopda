@@ -14,18 +14,10 @@ export async function getOptionalCurrentUser(): Promise<CurrentUser | null> {
   return resolved?.user ?? null;
 }
 
-/**
- * Resolve the signed-in user for UI server actions / pages, or redirect to login.
- * Uses session-gone when a stale cookie is present (avoids proxy↔app loops).
- */
-export async function requireActionUser(nextPath?: string): Promise<CurrentUser> {
-  const resolved = await requireActionSession(nextPath);
-  return resolved.user;
-}
-
 /** Resolve the signed-in user from the session cookie, or redirect to login. */
 export async function requireCurrentUser(nextPath?: string): Promise<CurrentUser> {
-  return requireActionUser(nextPath);
+  const resolved = await requireActionSession(nextPath);
+  return resolved.user;
 }
 
 /**
@@ -33,7 +25,7 @@ export async function requireCurrentUser(nextPath?: string): Promise<CurrentUser
  * Used by the app shell layout.
  */
 export async function requireAppUser(nextPath?: string): Promise<CurrentUser> {
-  const user = await requireActionUser(nextPath);
+  const user = await requireCurrentUser(nextPath);
   if (user.mustChangePassword) {
     redirect("/change-password");
   }

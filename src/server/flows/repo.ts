@@ -107,17 +107,6 @@ export async function getVersionById(
   return row;
 }
 
-export async function listVersionsForTemplate(
-  tx: AppTx,
-  templateId: string,
-): Promise<FlowVersionRow[]> {
-  return tx
-    .select()
-    .from(flowVersions)
-    .where(eq(flowVersions.templateId, templateId))
-    .orderBy(asc(flowVersions.versionNo));
-}
-
 /** Latest draft (unpublished) version for a template, if any. */
 export async function getDraftVersion(
   tx: AppTx,

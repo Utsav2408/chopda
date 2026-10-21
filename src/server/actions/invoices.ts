@@ -8,15 +8,12 @@ import {
   completeStepInputSchema,
   create,
   createInvoiceInputSchema,
-  get,
   list,
   listDeleted,
   listInvoicesQuerySchema,
   loadInvoiceDetailPage,
   softDelete,
   undo,
-  update,
-  updateInvoiceInputSchema,
   type InvoiceDetail,
   type InvoiceDetailPage,
   type InvoiceListResult,
@@ -24,7 +21,6 @@ import {
 } from "../invoices/index.js";
 import { complete } from "../steps/index.js";
 import * as dashboard from "../dashboard/index.js";
-import * as history from "../history/index.js";
 import * as reminders from "../reminders/index.js";
 import { Validation } from "../kernel/errors.js";
 
@@ -38,21 +34,6 @@ export async function invoicesCreateAction(raw: unknown): Promise<InvoiceDetail>
   if (!parsed.success) throw new Validation("Invalid create invoice payload");
   const ctx = await ctxFromCookies();
   return create(ctx, parsed.data);
-}
-
-export async function invoicesUpdateAction(
-  invoiceId: string,
-  raw: unknown,
-): Promise<InvoiceDetail> {
-  const parsed = updateInvoiceInputSchema.safeParse(raw);
-  if (!parsed.success) throw new Validation("Invalid update invoice payload");
-  const ctx = await ctxFromCookies();
-  return update(ctx, invoiceId, parsed.data);
-}
-
-export async function invoicesGetAction(invoiceId: string): Promise<InvoiceDetail> {
-  const ctx = await ctxFromCookies();
-  return get(ctx, invoiceId);
 }
 
 /** Invoice detail + history + display names in one transaction. */
@@ -92,35 +73,10 @@ export async function stepsCompleteAction(raw: unknown): Promise<InvoiceDetail> 
   return complete(ctx, parsed.data);
 }
 
-export async function dashboardCountsAction() {
-  const ctx = await ctxFromCookies();
-  return dashboard.counts(ctx);
-}
-
-export async function dashboardByStepAction() {
-  const ctx = await ctxFromCookies();
-  return dashboard.byStep(ctx);
-}
-
-export async function dashboardNeedsAttentionAction() {
-  const ctx = await ctxFromCookies();
-  return dashboard.needsAttention(ctx);
-}
-
-export async function dashboardRecentActivityAction() {
-  const ctx = await ctxFromCookies();
-  return dashboard.recentActivity(ctx);
-}
-
 /** Single-txn dashboard bundle (counts + byStep + attention + activity + names). */
 export async function dashboardLoadAction() {
   const ctx = await ctxFromCookies();
   return dashboard.loadDashboard(ctx);
-}
-
-export async function invoiceHistoryAction(invoiceId: string) {
-  const ctx = await ctxFromCookies();
-  return history.forInvoice(ctx, invoiceId);
 }
 
 export async function remindersComputeAction() {

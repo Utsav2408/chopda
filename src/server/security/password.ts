@@ -77,8 +77,3 @@ export async function dummyPasswordHash(): Promise<string> {
   }
   return cachedDummyHash;
 }
-
-/** Test helper: clear the dummy-hash cache. */
-export function resetDummyPasswordHashCache(): void {
-  cachedDummyHash = undefined;
-}

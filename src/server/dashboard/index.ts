@@ -5,7 +5,6 @@ export {
   recentActivity,
   loadDashboard,
   loadDerivedStatuses,
-  clearDashboardCountsCache,
   type DashboardCounts,
   type DashboardByStepRow,
   type NeedsAttentionItem,

@@ -1,6 +1,6 @@
 # Invoice Tracker: Phasewise Implementation Plan
 
-Draft dated 2026-10-11. Companion to `invoice-tracker-idea-problem-research-solution.md`, `invoice-tracker-wireframes.md`, `invoice-tracker-database-and-security-architecture.md` and `invoice-tracker-agentic-ui.md`. Editable doc version: https://claude.ai/code/artifact/a062b0cf-0ef6-4a4d-8453-28d70c1f9993
+Draft dated 2026-10-11. Companion to `invoice-tracker-wireframes.md`, `invoice-tracker-database-and-security-architecture.md` and `invoice-tracker-agentic-ui.md`. Editable doc version: https://claude.ai/code/artifact/a062b0cf-0ef6-4a4d-8453-28d70c1f9993
 
 ## How agents use this plan
 

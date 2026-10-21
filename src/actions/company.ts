@@ -4,20 +4,13 @@
 "use server";
 
 import {
-  companyGetAction as getCompany,
   companyLoadPageAction as loadCompanyPage,
   companyUpdateAction as updateCompany,
-  companySummaryAction as companySummary,
-  companyListBanksAction as listBanks,
   companyAddBankAction as addBank,
   companyEditBankAction as editBank,
   companyDeactivateBankAction as deactivateBank,
   companySetDefaultBankAction as setDefaultBank,
 } from "../server/actions/company.js";
-
-export async function companyGetAction() {
-  return getCompany();
-}
 
 export async function companyLoadPageAction() {
   return loadCompanyPage();
@@ -25,14 +18,6 @@ export async function companyLoadPageAction() {
 
 export async function companyUpdateAction(raw: unknown) {
   return updateCompany(raw);
-}
-
-export async function companySummaryAction() {
-  return companySummary();
-}
-
-export async function companyListBanksAction() {
-  return listBanks();
 }
 
 export async function companyAddBankAction(raw: unknown) {

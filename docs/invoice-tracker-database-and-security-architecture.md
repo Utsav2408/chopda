@@ -1,6 +1,6 @@
 # Invoice Tracker: Database and Data Security Architecture
 
-Draft dated 2026-10-11. Companion to `invoice-tracker-idea-problem-research-solution.md` and `invoice-tracker-wireframes.md`. Full version with diagram: https://claude.ai/code/artifact/9c25cede-17bd-4f08-9934-1732d39c7665
+Draft dated 2026-10-11. Companion to `invoice-tracker-wireframes.md`. Full version with diagram: https://claude.ai/code/artifact/9c25cede-17bd-4f08-9934-1732d39c7665
 
 ## Summary
 

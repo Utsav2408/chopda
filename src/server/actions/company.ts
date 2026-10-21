@@ -10,17 +10,13 @@ import {
   deactivateBank,
   editBank,
   editBankAccountSchema,
-  get,
-  listBanks,
   loadCompanyPage,
   setDefaultBank,
-  summary,
   update,
   updateCompanyProfileSchema,
   type BankAccountView,
   type CompanyPageData,
   type CompanyProfileView,
-  type CompanySummary,
 } from "../company/index.js";
 import { requireActionSession } from "../auth/cached-session.js";
 import { Validation } from "../kernel/errors.js";
@@ -28,11 +24,6 @@ import { Validation } from "../kernel/errors.js";
 async function ctxFromCookies() {
   const resolved = await requireActionSession();
   return resolved.ctx;
-}
-
-export async function companyGetAction(): Promise<CompanyProfileView> {
-  const ctx = await ctxFromCookies();
-  return get(ctx);
 }
 
 export async function companyLoadPageAction(): Promise<CompanyPageData> {
@@ -45,16 +36,6 @@ export async function companyUpdateAction(raw: unknown): Promise<CompanyProfileV
   if (!parsed.success) throw new Validation("Invalid company profile payload");
   const ctx = await ctxFromCookies();
   return update(ctx, parsed.data);
-}
-
-export async function companySummaryAction(): Promise<CompanySummary> {
-  const ctx = await ctxFromCookies();
-  return summary(ctx);
-}
-
-export async function companyListBanksAction(): Promise<BankAccountView[]> {
-  const ctx = await ctxFromCookies();
-  return listBanks(ctx);
 }
 
 export async function companyAddBankAction(raw: unknown): Promise<BankAccountView> {
